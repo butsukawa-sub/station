@@ -185,21 +185,22 @@
       }
 
       function render() {
-        let now = new Date();
+        let realNow = new Date();
         
-        if (now.getHours() < 3) {
-          now.setDate(now.getDate() - 1);
+        // ダイヤ計算用の日付（深夜3時までは前日扱い）
+        let trainDateObj = new Date(realNow.getTime());
+        if (trainDateObj.getHours() < 3) {
+          trainDateObj.setDate(trainDateObj.getDate() - 1);
         }
         
-        let yearWestern = now.getFullYear();
-        let month = now.getMonth() + 1;
-        let day = now.getDate();
+        let yearWestern = trainDateObj.getFullYear();
+        let month = trainDateObj.getMonth() + 1;
+        let day = trainDateObj.getDate();
         let weekdays = ['日', '月', '火', '水', '木', '金', '土'];
-        let weekdayStr = weekdays[now.getDay()];
+        let weekdayStr = weekdays[trainDateObj.getDay()];
 
         let fullDateString = `${yearWestern}年${month}月${day}日（${weekdayStr}）`;
 
-        let realNow = new Date();
         let timeStr = String(realNow.getHours()).padStart(2, '0') + ":" + 
                     String(realNow.getMinutes()).padStart(2, '0') + ":" + 
                     String(realNow.getSeconds()).padStart(2, '0');
@@ -226,39 +227,33 @@
           return "<p style='text-align:center; color:#777; font-size:1.1em;'>本日の残りの電車はありません</p>";
         }
 
-        const currentTotalSec = realNow.getHours() * 3600 + realNow.getMinutes() * 60 + realNow.getSeconds();
         const walkSec = parseInt(document.getElementById('walk-time-select').value, 10) * 60;
         let html = "";
         const labels = ["先発", "次発"];
         
+        // ミリ秒単位を含めた正確な現在秒（浮動小数点数）
+        let currentPreciseSec = realNow.getHours() * 3600 + realNow.getMinutes() * 60 + realNow.getSeconds() + realNow.getMilliseconds() / 1000;
+
         let validCount = 0;
         for (let i = 0; i < trains.length; i++) {
           let t = trains[i];
           
           let timeParts = t.time.split(':');
           let trainSec = parseInt(timeParts[0], 10) * 3600 + parseInt(timeParts[1], 10) * 60;
-          let leaveTotalSec = trainSec - walkSec;
+          let leavePreciseSec = trainSec - walkSec;
           
-          let adjustedCurrentSec = currentTotalSec;
+          let adjustedCurrentSec = currentPreciseSec;
           if (realNow.getHours() >= 0 && realNow.getHours() < 3 && trainSec < 3 * 3600) {
             adjustedCurrentSec += 86400;
-            leaveTotalSec += 86400;
-          }
-
-          // ミリ秒単位を含めた正確な残り秒数を計算（浮動小数点数）
-          let currentPreciseSec = realNow.getHours() * 3600 + realNow.getMinutes() * 60 + realNow.getSeconds() + realNow.getMilliseconds() / 1000;
-          let leavePreciseSec = trainSec - walkSec;
-          if (realNow.getHours() >= 0 && realNow.getHours() < 3 && trainSec < 3 * 3600) {
             leavePreciseSec += 86400;
-            if (currentPreciseSec < 3 * 3600) currentPreciseSec += 86400;
           }
 
-          let remainingPrecise = leavePreciseSec - currentPreciseSec;
+          let remainingPrecise = leavePreciseSec - adjustedCurrentSec;
           
-          // 0.0秒未満になったら削除（表示しない）
+          // 0.0秒未満になったら削除
           if (remainingPrecise <= 0) continue;
 
-          // ご指定の切り捨てルール（例: 49.01〜50.00秒なら残り10秒とする）を実現するため、切り上げ（Math.ceil）を使用
+          // 切り捨てルールに基づく残り秒数計算
           let totalRemainingSecInt = Math.ceil(remainingPrecise) - 1;
           if (totalRemainingSecInt < 0) continue;
 
@@ -288,9 +283,24 @@
         return html === "" ? "<p style='text-align:center; color:#777; font-size:1.1em;'>本日の残りの電車はありません</p>" : html;
       }
 
+      // ── 高精度ループ制御（ドリフト補正システム） ──
+      let expectedTime = Date.now() + 1000;
+
+      function highPrecisionLoop() {
+        let dt = Date.now() - expectedTime; // ズレたミリ秒数を検出
+        if (dt > 1000) dt = 0; // 万が一スリープ復帰などで大きくズレた場合の保険
+        
+        render(); // 画面を更新
+        
+        expectedTime += 1000;
+        // 次の実行タイミングを、発生したズレ（dt）を相殺して厳密に1秒後に調整
+        setTimeout(highPrecisionLoop, Math.max(0, 1000 - dt));
+      }
+
       window.onload = function() {
         fetchTrainData();
-        setInterval(render, 1000);
+        // 初回実行のスケジュール
+        setTimeout(highPrecisionLoop, 1000);
       };
     </script>
   </head>
