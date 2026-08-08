@@ -242,6 +242,9 @@
           let s = remainingSec % 60;
           let countStr = m + "分" + String(s).padStart(2, '0') + "秒";
 
+          // リミット時間の文字列（例: "12:47:00"）から秒を切り捨てる（"12:47"にする）
+          let leaveTimeShort = t.leaveTime.substring(0, 5);
+
           html += `
             <div class="train-item">
               <div class="train-label">${labelText}</div>
@@ -250,7 +253,7 @@
                   <span class="train-badge ${badgeClass}">${t.type}</span>
                   <span class="train-text-main">${t.destination}行｜${t.time}発｜${t.cars}両</span>
                 </div>
-                <div class="countdown">残り時間: ${countStr}（リミット: ${t.leaveTime}）</div>
+                <div class="countdown">残り時間: ${countStr}（リミット: ${leaveTimeShort}）</div>
               </div>
             </div>
           `;
