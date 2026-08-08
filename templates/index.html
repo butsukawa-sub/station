@@ -30,20 +30,20 @@
       .countdown { color: #d9534f; font-weight: bold; font-size: 1.0em; } 
 
       @media screen and (max-width: 1023px) {
-        body { padding: 15px; }
-        h1 { font-size: 2.5em; }
-        .station-name { font-size: 1.7em; }
-        .day-type-badge { font-size: 1.5em; padding: 6px 16px; }
-        .date-display { font-size: 1.5em; }
-        .time-display { font-size: 4.2em; }
-        .walk-time-selector { font-size: 1.4em; }
-        .walk-time-selector select { font-size: 1.0em; padding: 6px 12px; }
-        h2 { font-size: 2.1em; }
-        .departure-info { padding-bottom: 15px; font-size: 1.4em; }
-        .train-label { font-size: 1.8em; width: 100px; padding: 10px 0; }
-        .train-badge { font-size: 1.8em; padding: 8px 20px; }
-        .train-text-main { font-size: 1.8em; font-weight: bold; }
-        .countdown { font-size: 1.45em; }
+        body { padding: 10px; }
+        h1 { font-size: 1.8em; }          /* タイトルを小さく */
+        .station-name { font-size: 1.2em; }
+        .day-type-badge { font-size: 1.1em; padding: 3px 10px; }
+        .date-display { font-size: 1.1em; }
+        .time-display { font-size: 3.0em; }   /* 現在時刻を小さく */
+        .walk-time-selector { font-size: 1.1em; }
+        .walk-time-selector select { font-size: 0.9em; padding: 4px 8px; }
+        h2 { font-size: 1.3em; }          /* 「上り」「下り」の見出しを小さく */
+        .departure-info { padding-bottom: 10px; font-size: 1.0em; }
+        .train-label { font-size: 1.3em; width: 70px; padding: 6px 0; }
+        .train-badge { font-size: 1.3em; padding: 4px 12px; }
+        .train-text-main { font-size: 1.2em; font-weight: bold; }
+        .countdown { font-size: 1.1em; }
       }
 
       @media screen and (min-width: 1024px) {
@@ -170,8 +170,14 @@
       }
 
       window.onload = function() {
+        // 初回データ取得
         fetchTrainData();
+        
+        // 画面のカウントダウン表示（文字の更新）は1秒ごと
         setInterval(render, 1000);
+        
+        // サーバーからのデータ再取得（APIリクエスト）は「5秒に1回」に制限
+        setInterval(fetchTrainData, 5000);
       };
     </script>
   </head>
