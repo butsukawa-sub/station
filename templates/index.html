@@ -25,14 +25,15 @@
         margin-bottom: 6px; 
         flex-wrap: wrap; 
       }
-      .station-name { font-size: 1.25em; font-weight: bold; color: #555; }
+      .station-name { font-size: 1.25em; font-weight: bold; color: #555; display: inline-flex; align-items: center; }
       
-      /* 駅名横のインラインアイコン */
+      /* ＠のすぐ隣に置くアイコン（文字より大きめに調整：1.5em） */
       .station-inline-icon {
-        height: 1em;
+        height: 1.5em;          /* 文字より大きめのサイズに設定 */
         width: auto;
         vertical-align: middle;
-        margin-left: 4px;
+        margin-left: 2px;       /* ＠（新子安駅…）との距離を詰める */
+        margin-right: 2px;
       }
 
       .day-type-badge { background: #ffc107; color: #333; padding: 3px 12px; border-radius: 12px; font-weight: bold; font-size: 1.1em; }
@@ -114,6 +115,7 @@
         body { padding: 8px; }
         h1 { font-size: 1.2em; }
         .station-name { font-size: 0.9em; }
+        .station-inline-icon { height: 1.4em; } /* スマホでも文字より大きめを維持 */
         .day-type-badge { font-size: 0.85em; padding: 2px 8px; }
         .date-display { font-size: 0.9em; }
         .time-display { font-size: 1.8em; margin: 4px 0; }
@@ -254,7 +256,6 @@
           let s = remainingSec % 60;
           let countStr = m + "分" + String(s).padStart(2, '0') + "秒";
 
-          // リミット時間の秒（末尾の":00"など）を削る
           let leaveTimeShort = t.leaveTime.substring(0, 5);
 
           html += `
@@ -284,8 +285,7 @@
       <h1>次発電車リアルタイム案内</h1>
       <div class="sub-header-row">
         <span class="station-name">
-          @新子安駅（JR東日本）
-          <img src="{{ url_for('static', filename='icon.png') }}" alt="icon" class="station-inline-icon">
+          @<img src="{{ url_for('static', filename='icon.png') }}" alt="icon" class="station-inline-icon">新子安駅（JR東日本）
         </span>
         <span id="day-type-box" class="day-type-badge">--ダイヤ</span>
       </div>
