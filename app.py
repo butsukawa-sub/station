@@ -9,7 +9,7 @@ from google.oauth2.service_account import Credentials
 app = Flask(__name__)
 
 # スプレッドシートのID
-SPREADSHEET_ID = "YOUR_SPREADSHEET_ID_HERE"
+SPREADSHEET_ID = "1DvLNwfgkN307lOzMcpBJLC2Xe7cd5EtGt2SaaLKMDio"
 
 # 日本時間（JST = UTC+9）のタイムゾーン定義
 JST = timezone(timedelta(hours=9))
