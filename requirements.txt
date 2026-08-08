@@ -1,0 +1,4 @@
+Flask
+gunicorn
+gspread
+google-auth
