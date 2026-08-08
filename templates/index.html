@@ -187,9 +187,9 @@
       function render() {
         let realNow = new Date();
         
-        // ダイヤ計算用の日付（深夜3時までは前日扱い）
+        // 【修正点】毎回確実に最新の時刻（realNow）から日付を計算し直すことで、0:00になった瞬間に日付が切り替わります
         let trainDateObj = new Date(realNow.getTime());
-        if (trainDateObj.getHours() < 3) {
+        if (realNow.getHours() < 3) {
           trainDateObj.setDate(trainDateObj.getDate() - 1);
         }
         
@@ -284,17 +284,12 @@
       }
 
       // ── 超高精度リアルタイム・ループ制御 ──
-      // 秒が変わった瞬間（ミリ秒が切り替わった瞬間）を逃さず描画するため、
-      // requestAnimationFrameで常に現在時刻を監視し、秒数が進んだタイミングでrenderを実行します。
       let lastRenderedSecond = -1;
 
       function highPrecisionLoop() {
         let now = new Date();
         let currentSecond = now.getSeconds();
-        let currentMillisecond = now.getMilliseconds();
 
-        // 秒数が変わった、または初回起動時に即座に描画
-        // さらに、秒が変わる直前（例えば.950秒以降）はフレーム落ちを防ぐために強制描画を許容
         if (currentSecond !== lastRenderedSecond) {
           render();
           lastRenderedSecond = currentSecond;
