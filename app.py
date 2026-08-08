@@ -1,33 +1,12 @@
 import os
-import json
 import re
 from datetime import datetime, timedelta, timezone
 from flask import Flask, render_template, request, jsonify
-import gspread
-from google.oauth2.service_account import Credentials
 
 app = Flask(__name__)
 
-# スプレッドシートのID
-SPREADSHEET_ID = "1DvLNwfgkN307lOzMcpBJLC2Xe7cd5EtGt2SaaLKMDio"
-
 # 日本時間（JST = UTC+9）のタイムゾーン定義
 JST = timezone(timedelta(hours=9))
-
-def get_sheets_client():
-    scopes = [
-        "https://www.googleapis.com/auth/spreadsheets.readonly",
-        "https://www.googleapis.com/auth/drive.readonly"
-    ]
-    creds_json = os.environ.get("GOOGLE_CREDENTIALS_JSON")
-    if creds_json:
-        creds_dict = json.loads(creds_json)
-        creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-    else:
-        creds = Credentials.from_service_account_file("service_account.json", scopes=scopes)
-        
-    client = gspread.authorize(creds)
-    return client
 
 def check_is_holiday(date):
     month = date.month
@@ -52,39 +31,59 @@ def check_is_holiday(date):
 
     return False
 
-def parse_timetable(sheet, direction):
-    try:
-        data = sheet.get_all_values()
-    except Exception:
+def parse_timetable_from_file(file_path, direction):
+    """GitHub内にあるテキストファイルから時刻表をパースする"""
+    if not os.path.exists(file_path):
         return []
-    
-    if not data:
-        return []
+
+    with open(file_path, 'r', encoding='utf-8') as f:
+        content = f.read()
 
     timetable = []
     current_hour = 0
+    
+    lines = content.splitlines()
+    for line_str in lines:
+        line_str = line_str.strip()
+        if not line_str:
+            continue
 
-    for row in data:
-        hour_col = str(row[0]).strip() if len(row) > 0 else ""
-        detail_col = str(row[1]).strip() if len(row) > 1 else ""
+        # 「〇時」の行を検知する
+        if '時' in line_str or len(line_str) <= 3:
+            digits = re.findall(r'\d+', line_str)
+            if digits:
+                current_hour = int(digits[0])
+                continue
 
-        if hour_col != "":
-            hour_match = re.search(r'(\d+)時?', hour_col)
-            if hour_match:
-                current_hour = int(hour_match.group(1))
+        tokens = line_str.split()
+        i = 0
+        while i < len(tokens):
+            token = tokens[i]
+            
+            train_type_prefix = ""
+            if token == "快":
+                train_type_prefix = "快"
+                i += 1
+                if i < len(tokens):
+                    token = tokens[i]
+                else:
+                    break
 
-        if detail_col != "":
-            lines = detail_col.splitlines()
-            for line in lines:
-                line = line.strip()
-                if line == "":
-                    continue
+            if token.isdigit():
+                minute = int(token)
+                dest_code = ""
+                
+                if i + 1 < len(tokens) and tokens[i+1] in ["浦", "赤", "上", "蒲", "磯", "桜", "神"]:
+                    dest_code = tokens[i+1]
+                    i += 1
 
-                parsed = parse_train_line(line, direction)
+                full_line_text = train_type_prefix + token + dest_code
+                parsed = parse_train_line(full_line_text, direction)
+                
                 if parsed is not None:
                     adjusted_hour = current_hour
                     if 0 <= current_hour < 3:
-                        adjusted_hour += 24
+                        adjusted_hour += 24 # 深夜帯のソート調整
                     
                     timetable.append({
                         "hour": current_hour,
@@ -93,6 +92,7 @@ def parse_timetable(sheet, direction):
                         "type": parsed["type"],
                         "dest": parsed["dest"]
                     })
+            i += 1
 
     timetable.sort(key=lambda x: (x["sortHour"] * 60 + x["minute"]))
     return timetable
@@ -126,6 +126,7 @@ def get_up_destination_name(code):
     if code == "浦": return "南浦和"
     elif code == "蒲": return "蒲田"
     elif code == "上": return "上野"
+    elif code == "赤": return "赤羽"
     else: return "大宮"
 
 def get_down_destination_name(code):
@@ -180,7 +181,6 @@ def api_trains():
     except ValueError:
         walk_minutes = 12
 
-    # ★ サーバーのタイムゾーンに関係なく「日本時間（JST）」で現在時刻を取得する
     now = datetime.now(JST)
     current_hour = now.hour
     current_minute = now.minute
@@ -193,30 +193,31 @@ def api_trains():
     current_total_sec = current_hour * 3600 + current_minute * 60 + current_second
     walk_time_sec = walk_minutes * 60
 
-    # 土休日かどうかの判定（日本時間基準）
     is_holiday = check_is_holiday(target_date)
     
-    up_sheet_name = "休日上り" if is_holiday else "平日上り"
-    down_sheet_name = "休日下り" if is_holiday else "休日下り"
+    # ダイヤに応じて読み込むファイルを切り替え
+    if is_holiday:
+        up_file = "timetable/d_i.txt"
+        down_file = "timetable/d_o.txt"
+        day_type_str = "土休日ダイヤ"
+    else:
+        up_file = "timetable/h_i.txt"
+        down_file = "timetable/h_o.txt"
+        day_type_str = "平日ダイヤ"
 
     try:
-        client = get_sheets_client()
-        ss = client.open_by_key(SPREADSHEET_ID)
-        
-        up_sheet = ss.worksheet(up_sheet_name)
-        up_timetable = parse_timetable(up_sheet, "up")
+        up_timetable = parse_timetable_from_file(up_file, "up")
         next_up_trains = find_next_trains(up_timetable, current_total_sec, current_hour, walk_time_sec)
 
-        down_sheet = ss.worksheet(down_sheet_name)
-        down_timetable = parse_timetable(down_sheet, "down")
+        down_timetable = parse_timetable_from_file(down_file, "down")
         next_down_trains = find_next_trains(down_timetable, current_total_sec, current_hour, walk_time_sec)
     except Exception as e:
-        print(f"Error accessing spreadsheet: {e}")
+        print(f"Error reading timetable files: {e}")
         next_up_trains = []
         next_down_trains = []
 
     return jsonify({
-        "dayType": "土休日ダイヤ" if is_holiday else "平日ダイヤ",
+        "dayType": day_type_str,
         "up": next_up_trains,
         "down": next_down_trains
     })
