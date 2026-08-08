@@ -32,8 +32,8 @@ def check_is_holiday(date):
     return False
 
 def parse_timetable_from_file(file_path, direction):
-    """GitHub内にあるテキストファイルから時刻表をパースする"""
     if not os.path.exists(file_path):
+        print(f"【エラー】ファイルが見つかりません: {file_path}") # 追加
         return []
 
     with open(file_path, 'r', encoding='utf-8') as f:
