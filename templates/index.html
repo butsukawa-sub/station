@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>次発電車リアルタイム案内</title>
-  
-  <link rel="icon" href="{{ url_for('static', filename='icon.png') }}" type="image/png">
-  
-  <style>
-    /* （以下略） */
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>次発電車リアルタイム案内</title>
+    
+    <link rel="icon" href="{{ url_for('static', filename='icon.png') }}" type="image/png">
+
+    <style>
       /* ==========================================
          共通・ベーススタイル
          ========================================== */
@@ -26,6 +26,15 @@
         flex-wrap: wrap; 
       }
       .station-name { font-size: 1.25em; font-weight: bold; color: #555; }
+      
+      /* 駅名横のインラインアイコン */
+      .station-inline-icon {
+        height: 1em;
+        width: auto;
+        vertical-align: middle;
+        margin-left: 4px;
+      }
+
       .day-type-badge { background: #ffc107; color: #333; padding: 3px 12px; border-radius: 12px; font-weight: bold; font-size: 1.1em; }
       
       .date-display { font-size: 1.15em; color: #444; margin-bottom: 6px; font-weight: bold; }
@@ -99,7 +108,7 @@
 
 
       /* ==========================================
-         スマホ版向け個別調整（文字サイズを大幅に小さく・コンパクトに）
+         スマホ版向け個別調整（コンパクト化）
          ========================================== */
       @media screen and (max-width: 1023px) {
         body { padding: 8px; }
@@ -123,7 +132,7 @@
 
 
       /* ==========================================
-         PC版向け個別調整（従来通り）
+         PC版向け個別調整
          ========================================== */
       @media screen and (min-width: 1024px) {
         body { padding: 15px; }
@@ -245,7 +254,7 @@
           let s = remainingSec % 60;
           let countStr = m + "分" + String(s).padStart(2, '0') + "秒";
 
-          // リミット時間の文字列（例: "12:47:00"）から秒を切り捨てる（"12:47"にする）
+          // リミット時間の秒（末尾の":00"など）を削る
           let leaveTimeShort = t.leaveTime.substring(0, 5);
 
           html += `
@@ -274,7 +283,10 @@
     <div class="header-area">
       <h1>次発電車リアルタイム案内</h1>
       <div class="sub-header-row">
-        <span class="station-name">@新子安駅（JR東日本）</span>
+        <span class="station-name">
+          @新子安駅（JR東日本）
+          <img src="{{ url_for('static', filename='icon.png') }}" alt="icon" class="station-inline-icon">
+        </span>
         <span id="day-type-box" class="day-type-badge">--ダイヤ</span>
       </div>
       <div id="date-box" class="date-display">読み込み中...</div>
