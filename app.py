@@ -8,7 +8,7 @@ from google.oauth2.service_account import Credentials
 app = Flask(__name__)
 
 # スプレッドシートのID（ご自身のスプレッドシートURLの /d/ と /edit の間の文字列に書き換えてください）
-SPREADSHEET_ID = "YOUR_SPREADSHEET_ID_HERE"
+SPREADSHEET_ID = "1DvLNwfgkN307lOzMcpBJLC2Xe7cd5EtGt2SaaLKMDio"
 
 def get_sheets_client():
     scopes = [
