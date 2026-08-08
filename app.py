@@ -1,7 +1,7 @@
 import os
 import json
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from flask import Flask, render_template, request, jsonify
 import gspread
 from google.oauth2.service_account import Credentials
@@ -9,7 +9,10 @@ from google.oauth2.service_account import Credentials
 app = Flask(__name__)
 
 # スプレッドシートのID
-SPREADSHEET_ID = "1DvLNwfgkN307lOzMcpBJLC2Xe7cd5EtGt2SaaLKMDio"
+SPREADSHEET_ID = "YOUR_SPREADSHEET_ID_HERE"
+
+# 日本時間（JST = UTC+9）のタイムゾーン定義
+JST = timezone(timedelta(hours=9))
 
 def get_sheets_client():
     scopes = [
@@ -26,7 +29,6 @@ def get_sheets_client():
     client = gspread.authorize(creds)
     return client
 
-# 土休日（祝日・年末年始・土日）を判定する関数（GASの移植）
 def check_is_holiday(date):
     month = date.month
     day = date.day
@@ -36,18 +38,16 @@ def check_is_holiday(date):
     if (month == 12 and (day == 30 or day == 31)) or (month == 1 and (1 <= day <= 3)):
         return True
 
-    # ② 土曜日・日曜日の判定 (Pythonでは 5:土, 6:日)
+    # ② 土曜日・日曜日の判定
     if day_of_week == 5 or day_of_week == 6:
         return True
 
-    # ③ 日本の祝日判定（jpholidayライブラリを使用、未導入の場合は簡易判定）
+    # ③ 日本の祝日判定
     try:
         import jpholiday
         if jpholiday.is_holiday(date):
             return True
     except ImportError:
-        # jpholidayが入っていない場合の簡易的な祝日チェック（主要な固定祝日など）
-        # ※正確な祝日判定のために `pip install jpholiday` を requirements.txt に追加することをおすすめします
         pass
 
     return False
@@ -84,7 +84,7 @@ def parse_timetable(sheet, direction):
                 if parsed is not None:
                     adjusted_hour = current_hour
                     if 0 <= current_hour < 3:
-                        adjusted_hour += 24 # 深夜帯を24時、25時としてソート用に調整
+                        adjusted_hour += 24
                     
                     timetable.append({
                         "hour": current_hour,
@@ -180,12 +180,12 @@ def api_trains():
     except ValueError:
         walk_minutes = 12
 
-    now = datetime.now()
+    # ★ サーバーのタイムゾーンに関係なく「日本時間（JST）」で現在時刻を取得する
+    now = datetime.now(JST)
     current_hour = now.hour
     current_minute = now.minute
     current_second = now.second
     
-    # 深夜0時〜3時未満の場合は、前日の日付・曜日として判定する
     target_date = now
     if current_hour < 3:
         target_date = now - timedelta(days=1)
@@ -193,11 +193,11 @@ def api_trains():
     current_total_sec = current_hour * 3600 + current_minute * 60 + current_second
     walk_time_sec = walk_minutes * 60
 
-    # ダイヤの種類（平日か土休日か）を判定
+    # 土休日かどうかの判定（日本時間基準）
     is_holiday = check_is_holiday(target_date)
     
     up_sheet_name = "休日上り" if is_holiday else "平日上り"
-    down_sheet_name = "休日下り" if is_holiday else "平日下り"
+    down_sheet_name = "休日下り" if is_holiday else "休日下り"
 
     try:
         client = get_sheets_client()
