@@ -32,8 +32,8 @@ def check_is_holiday(date):
     return False
 
 def parse_timetable_from_file(file_path, direction):
+    """GitHub内にあるテキストファイルから時刻表をパースする"""
     if not os.path.exists(file_path):
-        print(f"【エラー】ファイルが見つかりません: {file_path}") # 追加
         return []
 
     with open(file_path, 'r', encoding='utf-8') as f:
@@ -42,57 +42,63 @@ def parse_timetable_from_file(file_path, direction):
     timetable = []
     current_hour = 0
     
-    lines = content.splitlines()
-    for line_str in lines:
-        line_str = line_str.strip()
-        if not line_str:
+    # すべてのトークン（単語・数字）に分解して順番に処理する
+    # 例: ["4時", "27", "40", "50", "5時", "01", ...] のようなフラットなリストにする
+    tokens = content.split()
+    
+    i = 0
+    while i < len(tokens):
+        token = tokens[i]
+        
+        # 「〇時」という形式のトークンかチェック
+        hour_match = re.search(r'(\d+)時', token)
+        if hour_match:
+            current_hour = int(hour_match.group(1))
+            i += 1
+            continue
+            
+        # 単に数字だけで、次のトークンが「時」のケース（まれにある構造対策）
+        if token.isdigit() and i + 1 < len(tokens) and tokens[i+1] == "時":
+            current_hour = int(token)
+            i += 2
             continue
 
-        # 「〇時」の行を検知する
-        if '時' in line_str or len(line_str) <= 3:
-            digits = re.findall(r'\d+', line_str)
-            if digits:
-                current_hour = int(digits[0])
-                continue
-
-        tokens = line_str.split()
-        i = 0
-        while i < len(tokens):
-            token = tokens[i]
-            
-            train_type_prefix = ""
-            if token == "快":
-                train_type_prefix = "快"
-                i += 1
-                if i < len(tokens):
-                    token = tokens[i]
-                else:
-                    break
-
-            if token.isdigit():
-                minute = int(token)
-                dest_code = ""
-                
-                if i + 1 < len(tokens) and tokens[i+1] in ["浦", "赤", "上", "蒲", "磯", "桜", "神"]:
-                    dest_code = tokens[i+1]
-                    i += 1
-
-                full_line_text = train_type_prefix + token + dest_code
-                parsed = parse_train_line(full_line_text, direction)
-                
-                if parsed is not None:
-                    adjusted_hour = current_hour
-                    if 0 <= current_hour < 3:
-                        adjusted_hour += 24 # 深夜帯のソート調整
-                    
-                    timetable.append({
-                        "hour": current_hour,
-                        "sortHour": adjusted_hour,
-                        "minute": parsed["minute"],
-                        "type": parsed["type"],
-                        "dest": parsed["dest"]
-                    })
+        # 種別（快）の処理
+        train_type_prefix = ""
+        if token == "快":
+            train_type_prefix = "快"
             i += 1
+            if i < len(tokens):
+                token = tokens[i]
+            else:
+                break
+
+        # 分数の数値かチェック
+        if token.isdigit():
+            minute = int(token)
+            dest_code = ""
+            
+            # 次のトークンが宛先コード（浦、赤、上、蒲、磯、桜、神）かチェック
+            if i + 1 < len(tokens) and tokens[i+1] in ["浦", "赤", "上", "蒲", "磯", "桜", "神"]:
+                dest_code = tokens[i+1]
+                i += 1
+
+            full_line_text = train_type_prefix + token + dest_code
+            parsed = parse_train_line(full_line_text, direction)
+            
+            if parsed is not None:
+                adjusted_hour = current_hour
+                if 0 <= current_hour < 3:
+                    adjusted_hour += 24 # 深夜帯のソート調整
+                
+                timetable.append({
+                    "hour": current_hour,
+                    "sortHour": adjusted_hour,
+                    "minute": parsed["minute"],
+                    "type": parsed["type"],
+                    "dest": parsed["dest"]
+                })
+        i += 1
 
     timetable.sort(key=lambda x: (x["sortHour"] * 60 + x["minute"]))
     return timetable
