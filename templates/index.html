@@ -96,24 +96,26 @@
 
 
       /* ==========================================
-         スマホ版向け個別調整（さらに思いっきり大きく！）
+         スマホ版向け個別調整（文字サイズを大幅に小さく・コンパクトに）
          ========================================== */
       @media screen and (max-width: 1023px) {
-        body { padding: 15px; }
-        h1 { font-size: 2.5em; }
-        .station-name { font-size: 1.7em; }
-        .day-type-badge { font-size: 1.5em; padding: 6px 16px; }
-        .date-display { font-size: 1.5em; }
-        .time-display { font-size: 4.2em; }
-        .walk-time-selector { font-size: 1.4em; }
-        .walk-time-selector select { font-size: 1.0em; padding: 6px 12px; }
-        h2 { font-size: 2.1em; }
-        .departure-info { padding-bottom: 15px; font-size: 1.4em; }
-        .train-label { font-size: 1.8em; width: 100px; padding: 10px 0; }
+        body { padding: 8px; }
+        h1 { font-size: 1.2em; }
+        .station-name { font-size: 0.9em; }
+        .day-type-badge { font-size: 0.85em; padding: 2px 8px; }
+        .date-display { font-size: 0.9em; }
+        .time-display { font-size: 1.8em; margin: 4px 0; }
+        .walk-time-selector { font-size: 0.85em; }
+        .walk-time-selector select { font-size: 0.85em; padding: 2px 4px; }
+        h2 { font-size: 1.05em; }
+        .departure-info { padding-bottom: 8px; font-size: 0.8em; }
+        .train-label { font-size: 0.85em; width: 45px; padding: 3px 0; margin-right: 6px; }
         
-        .train-badge { font-size: 1.8em; padding: 8px 20px; }
-        .train-text-main { font-size: 1.8em; font-weight: bold; }
-        .countdown { font-size: 1.45em; }
+        .train-badge { font-size: 0.9em; padding: 2px 8px; }
+        .train-text-main { font-size: 0.9em; font-weight: bold; }
+        .countdown { font-size: 0.8em; }
+        .train-item { padding: 8px 2px; }
+        .card { padding: 10px; }
       }
 
 
@@ -154,7 +156,6 @@
       function fetchTrainData() {
         const walkMin = parseInt(document.getElementById('walk-time-select').value, 10);
         
-        // FlaskサーバーのAPIを叩くように変更（負荷対策として5秒おきにフェッチ）
         fetch(`/api/trains?walk=${walkMin}`)
           .then(response => response.json())
           .then(data => {
@@ -208,7 +209,7 @@
 
       function formatTrains(trains, realNow) {
         if (!trains || trains.length === 0) {
-          return "<p style='text-align:center; color:#777; font-size:1.3em;'>本日の残りの電車はありません</p>";
+          return "<p style='text-align:center; color:#777; font-size:1.1em;'>本日の残りの電車はありません</p>";
         }
 
         const currentTotalSec = realNow.getHours() * 3600 + realNow.getMinutes() * 60 + realNow.getSeconds();
@@ -254,7 +255,7 @@
             </div>
           `;
         }
-        return html === "" ? "<p style='text-align:center; color:#777; font-size:1.3em;'>本日の残りの電車はありません</p>" : html;
+        return html === "" ? "<p style='text-align:center; color:#777; font-size:1.1em;'>本日の残りの電車はありません</p>" : html;
       }
 
       window.onload = function() {
