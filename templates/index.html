@@ -245,15 +245,29 @@
             leaveTotalSec += 86400;
           }
 
-          let remainingSec = leaveTotalSec - adjustedCurrentSec;
-          if (remainingSec <= 0) continue;
+          // ミリ秒単位を含めた正確な残り秒数を計算（浮動小数点数）
+          let currentPreciseSec = realNow.getHours() * 3600 + realNow.getMinutes() * 60 + realNow.getSeconds() + realNow.getMilliseconds() / 1000;
+          let leavePreciseSec = trainSec - walkSec;
+          if (realNow.getHours() >= 0 && realNow.getHours() < 3 && trainSec < 3 * 3600) {
+            leavePreciseSec += 86400;
+            if (currentPreciseSec < 3 * 3600) currentPreciseSec += 86400;
+          }
+
+          let remainingPrecise = leavePreciseSec - currentPreciseSec;
+          
+          // 0.0秒未満になったら削除（表示しない）
+          if (remainingPrecise <= 0) continue;
+
+          // ご指定の切り捨てルール（例: 49.01〜50.00秒なら残り10秒とする）を実現するため、切り上げ（Math.ceil）を使用
+          let totalRemainingSecInt = Math.ceil(remainingPrecise) - 1;
+          if (totalRemainingSecInt < 0) continue;
 
           let badgeClass = (t.type === "快速") ? "type-rapid" : "type-local";
           let labelText = labels[validCount] || "次発";
           validCount++;
           
-          let m = Math.floor(remainingSec / 60);
-          let s = remainingSec % 60;
+          let m = Math.floor(totalRemainingSecInt / 60);
+          let s = totalRemainingSecInt % 60;
           let countStr = m + "分" + String(s).padStart(2, '0') + "秒";
 
           let leaveTimeShort = t.leaveTime.substring(0, 5);
