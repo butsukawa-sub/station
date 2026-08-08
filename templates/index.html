@@ -1,246 +1,299 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>次発電車リアルタイム案内</title>
     <style>
-      body { font-family: sans-serif; background: #f4f4f9; padding: 10px; color: #333; margin: 0; }
-      .header-area { text-align: center; margin-bottom: 15px; }
-      h1 { margin: 0 0 6px 0; color: #222; font-size: 1.8em; }
-      .sub-header-row { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
-      .station-name { font-size: 1.25em; font-weight: bold; color: #555; }
-      .day-type-badge { background: #ffc107; color: #333; padding: 3px 12px; border-radius: 12px; font-weight: bold; font-size: 1.1em; }
-      .date-display { font-size: 1.15em; color: #444; margin-bottom: 6px; font-weight: bold; }
-      .time-display { font-size: 2.8em; font-weight: bold; color: #007bff; letter-spacing: 2px; margin-bottom: 10px; }
-      .walk-time-selector { margin-top: 5px; font-size: 1.05em; font-weight: bold; color: #444; }
-      .walk-time-selector select { font-size: 1.0em; padding: 4px 8px; border-radius: 5px; border: 1px solid #ccc; font-weight: bold; background: #fff; color: #333; }
-      .container { display: flex; flex-direction: column; align-items: center; gap: 12px; max-width: 100%; margin: 0 auto; box-sizing: border-box; }
-      .card { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 100%; box-sizing: border-box; text-align: center; }
-      h2 { border-bottom: 2px solid #007bff; padding-bottom: 4px; color: #007bff; margin-top: 0; font-size: 1.4em; }
-      .departure-info { padding-bottom: 12px; border-bottom: 1px solid #eee; font-size: 1.0em; color: #666; text-align: center; font-weight: bold; }
-      .train-item { display: flex; align-items: center; justify-content: flex-start; border-bottom: 1px solid #eee; padding: 12px 4px; }
-      .train-label { font-size: 1.2em; font-weight: bold; color: #333; width: 65px; flex-shrink: 0; text-align: center; background: #e9ecef; padding: 6px 0; border-radius: 5px; margin-right: 10px; }
-      .train-details { text-align: left; width: 100%; }
-      .train-badge { display: inline-block; padding: 4px 14px; border-radius: 5px; font-weight: bold; color: #fff; text-align: center; font-size: 1.25em; }
-      .type-rapid { background-color: #e83e8c; }
-      .type-local { background-color: #17a2b8; }
-      .train-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
-      .train-text-main { font-size: 1.15em; font-weight: bold; } 
-      .countdown { color: #d9534f; font-weight: bold; font-size: 1.0em; } 
+        :root {
+            --primary-color: #0066cc;
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-color: #e0e0e0;
+        }
 
-      @media screen and (max-width: 1023px) {
-        body { padding: 10px; }
-        h1 { font-size: 1.8em; }          /* タイトルを小さく */
-        .station-name { font-size: 1.2em; }
-        .day-type-badge { font-size: 1.1em; padding: 3px 10px; }
-        .date-display { font-size: 1.1em; }
-        .time-display { font-size: 3.0em; }   /* 現在時刻を小さく */
-        .walk-time-selector { font-size: 1.1em; }
-        .walk-time-selector select { font-size: 0.9em; padding: 4px 8px; }
-        h2 { font-size: 1.3em; }          /* 「上り」「下り」の見出しを小さく */
-        .departure-info { padding-bottom: 10px; font-size: 1.0em; }
-        .train-label { font-size: 1.3em; width: 70px; padding: 6px 0; }
-        .train-badge { font-size: 1.3em; padding: 4px 12px; }
-        .train-text-main { font-size: 1.2em; font-weight: bold; }
-        .countdown { font-size: 1.1em; }
-      }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+        }
 
-      @media screen and (min-width: 1024px) {
-        body { padding: 15px; }
-        .container { flex-direction: row; justify-content: center; align-items: flex-start; max-width: 1300px; }
-        .card { width: 48%; min-width: 480px; padding: 18px; }
-        h1 { font-size: 2.1em; }
-        .station-name { font-size: 1.3em; }
-        .day-type-badge { font-size: 1.15em; padding: 3px 12px; }
-        .time-display { font-size: 3.0em; }
-        .walk-time-selector { font-size: 1.1em; }
-        h2 { font-size: 1.5em; }
-        .departure-info { padding-bottom: 12px; font-size: 1.05em; font-weight: bold; }
-        .train-label { font-size: 1.2em; width: 70px; padding: 6px 0; }
-        .train-badge { font-size: 1.28em; padding: 4px 16px; }
-        .train-text-main { font-size: 1.2em; font-weight: bold; }
-        .countdown { font-size: 1.1em; }
-      }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 1.8em;
+            color: var(--primary-color);
+            margin: 0 0 5px 0;
+        }
+
+        .station-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .day-type-badge {
+            display: inline-block;
+            background: #eef2f7;
+            color: var(--primary-color);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .date-display {
+            font-size: 1.1em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .time-display {
+            font-size: 3em;
+            font-weight: bold;
+            color: #222;
+            margin: 10px 0;
+            letter-spacing: 1px;
+        }
+
+        .walk-time-selector {
+            text-align: center;
+            margin: 15px 0;
+            font-size: 1em;
+        }
+
+        .walk-time-selector select {
+            font-size: 1em;
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .train-section {
+            margin-bottom: 25px;
+            background: #fafbfc;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        h2 {
+            font-size: 1.3em;
+            text-align: center;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 6px;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .departure-info {
+            text-align: center;
+            font-size: 0.95em;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .train-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .train-card-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .train-label {
+            font-size: 0.85em;
+            font-weight: bold;
+            background: #e0e0e0;
+            color: #444;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-align: center;
+            width: 40px;
+        }
+
+        .train-badge {
+            font-size: 0.95em;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #fff;
+        }
+
+        .badge-normal { background-color: #007bff; }
+        .badge-rapid { background-color: #dc3545; }
+
+        .train-text-main {
+            font-size: 1em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .countdown {
+            font-size: 0.95em;
+            color: #d9534f;
+            font-weight: bold;
+            margin-top: 4px;
+        }
+
+        .no-train {
+            text-align: center;
+            color: #888;
+            padding: 10px;
+            font-size: 0.95em;
+        }
+
+        /* スマホ向けコンパクト化スタイル */
+        @media screen and (max-width: 600px) {
+            body { padding: 6px; }
+            .container { padding: 12px; border-radius: 8px; }
+            h1 { font-size: 1.4em; }
+            .station-name { font-size: 1.0em; }
+            .time-display { font-size: 2.2em; }
+            h2 { font-size: 1.1em; }
+            .train-card { padding: 8px; margin-bottom: 8px; }
+        }
     </style>
-    <script>
-      let currentData = { up: [], down: [], dayType: "" };
-      let lastFetchedTime = 0;
-
-      function fetchTrainData() {
-        const walkMin = parseInt(document.getElementById('walk-time-select').value, 10);
-        fetch('/api/trains?walk=' + walkMin)
-          .then(response => response.json())
-          .then(data => {
-            currentData = data;
-            lastFetchedTime = Date.now();
-            render();
-          })
-          .catch(err => console.error(err));
-      }
-
-      function onWalkTimeChanged() {
-        fetchTrainData();
-      }
-
-      function render() {
-        let now = new Date();
-        if (now.getHours() < 3) {
-          now.setDate(now.getDate() - 1);
-        }
-        
-        let yearWestern = now.getFullYear();
-        let month = now.getMonth() + 1;
-        let day = now.getDate();
-        let weekdays = ['日', '月', '火', '水', '木', '金', '土'];
-        let weekdayStr = weekdays[now.getDay()];
-
-        let fullDateString = `${yearWestern}年${month}月${day}日（${weekdayStr}）`;
-
-        let realNow = new Date();
-        let timeStr = String(realNow.getHours()).padStart(2, '0') + ":" + 
-                    String(realNow.getMinutes()).padStart(2, '0') + ":" + 
-                    String(realNow.getSeconds()).padStart(2, '0');
-
-        document.getElementById('day-type-box').innerText = currentData.dayType || "--ダイヤ";
-        document.getElementById('date-box').innerText = fullDateString;
-        document.getElementById('time-box').innerText = timeStr;
-        
-        const selectedWalkVal = document.getElementById('walk-time-select').value;
-        const departureInfoHtml = `出発地: 浅野学園｜徒歩: ${selectedWalkVal}分`;
-        document.getElementById('up-departure-info').innerHTML = departureInfoHtml;
-        document.getElementById('down-departure-info').innerHTML = departureInfoHtml;
-
-        document.getElementById('up-content').innerHTML = formatTrains(currentData.up, realNow);
-        document.getElementById('down-content').innerHTML = formatTrains(currentData.down, realNow);
-
-        if (Date.now() - lastFetchedTime > 5000) {
-          fetchTrainData();
-        }
-      }
-
-      function formatTrains(trains, realNow) {
-        if (!trains || trains.length === 0) {
-          return "<p style='text-align:center; color:#777; font-size:1.3em;'>本日の残りの電車はありません</p>";
-        }
-
-        const currentTotalSec = realNow.getHours() * 3600 + realNow.getMinutes() * 60 + realNow.getSeconds();
-        const walkSec = parseInt(document.getElementById('walk-time-select').value, 10) * 60;
-        let html = "";
-        const labels = ["先発", "次発"];
-        
-        let validCount = 0;
-        for (let i = 0; i < trains.length; i++) {
-          let t = trains[i];
-          let timeParts = t.time.split(':');
-          let trainSec = parseInt(timeParts[0], 10) * 3600 + parseInt(timeParts[1], 10) * 60;
-          let leaveTotalSec = trainSec - walkSec;
-          
-          let adjustedCurrentSec = currentTotalSec;
-          if (realNow.getHours() >= 0 && realNow.getHours() < 3 && trainSec < 3 * 3600) {
-            adjustedCurrentSec += 86400;
-            leaveTotalSec += 86400;
-          }
-
-          let remainingSec = leaveTotalSec - adjustedCurrentSec;
-          if (remainingSec <= 0) continue;
-
-          let badgeClass = (t.type === "快速") ? "type-rapid" : "type-local";
-          let labelText = labels[validCount] || "次発";
-          validCount++;
-          
-          let m = Math.floor(remainingSec / 60);
-          let s = remainingSec % 60;
-          let countStr = m + "分" + String(s).padStart(2, '0') + "秒";
-
-          html += `
-            <div class="train-item">
-              <div class="train-label">${labelText}</div>
-              <div class="train-details">
-                <div class="train-row">
-                  <span class="train-badge ${badgeClass}">${t.type}</span>
-                  <span class="train-text-main">${t.destination}行｜${t.time}発｜${t.cars}両</span>
-                </div>
-                <div class="countdown">残り時間: ${countStr}（リミット: ${t.leaveTime}）</div>
-              </div>
-            </div>
-          `;
-        }
-        return html === "" ? "<p style='text-align:center; color:#777; font-size:1.3em;'>本日の残りの電車はありません</p>" : html;
-      }
-
-      window.onload = function() {
-        // 初回データ取得
-        fetchTrainData();
-        
-        // 画面のカウントダウン表示（文字の更新）は1秒ごと
-        setInterval(render, 1000);
-        
-        // サーバーからのデータ再取得（APIリクエスト）は「5秒に1回」に制限
-        setInterval(fetchTrainData, 5000);
-      };
-    </script>
-  </head>
-  <body>
-    <div class="header-area">
-      <h1>次発電車リアルタイム案内</h1>
-      <div class="sub-header-row">
-        <span class="station-name">@新子安駅（JR東日本）</span>
-        <span id="day-type-box" class="day-type-badge">--ダイヤ</span>
-      </div>
-      <div id="date-box" class="date-display">読み込み中...</div>
-      <div id="time-box" class="time-display">--:--:--</div>
-      
-      <div class="walk-time-selector">
-        <label for="walk-time-select">徒歩: </label>
-        <select id="walk-time-select" onchange="onWalkTimeChanged()">
-          <option value="0">0分=時刻表</option>
-          <option value="1">1分</option>
-          <option value="2">2分</option>
-          <option value="3">3分</option>
-          <option value="4">4分</option>
-          <option value="5">5分</option>
-          <option value="6">6分</option>
-          <option value="7">7分</option>
-          <option value="8">8分</option>
-          <option value="9">9分</option>
-          <option value="10">10分</option>
-          <option value="11">11分</option>
-          <option value="12" selected>12分</option>
-          <option value="13">13分</option>
-          <option value="14">14分</option>
-          <option value="15">15分</option>
-          <option value="16">16分</option>
-          <option value="17">17分</option>
-          <option value="18">18分</option>
-          <option value="19">19分</option>
-          <option value="20">20分</option>
-          <option value="21">21分</option>
-          <option value="22">22分</option>
-          <option value="23">23分</option>
-          <option value="24">24分</option>
-          <option value="25">25分</option>
-          <option value="26">26分</option>
-          <option value="27">27分</option>
-          <option value="28">28分</option>
-          <option value="29">29分</option>
-          <option value="30">30分</option>
-        </select>
-      </div>
-    </div>
-
+</head>
+<body>
     <div class="container">
-      <div class="card">
-        <h2>上り</h2>
-        <div id="up-departure-info" class="departure-info">出発地: 浅野学園｜徒歩: 12分</div>
-        <div id="up-content">読み込み中...</div>
-      </div>
-      
-      <div class="card">
-        <h2>下り</h2>
-        <div id="down-departure-info" class="departure-info">出発地: 浅野学園｜徒歩: 12分</div>
-        <div id="down-content">読み込み中...</div>
-      </div>
+        <header>
+            <h1>次発電車リアルタイム案内</h1>
+            <div class="station-name">@新子安駅（JR東日本）</div>
+            <div id="dayType" class="day-type-badge">読み込み中...</div>
+            <div id="dateDisplay" class="date-display">----年--月--日（-）</div>
+            <div id="timeDisplay" class="time-display">--:--:--</div>
+        </header>
+
+        <div class="walk-time-selector">
+            <label for="walkSelect">出発地からの徒歩時間: </label>
+            <select id="walkSelect" onchange="fetchTrainData()">
+                <option value="0">0分 (駅ホーム/直結)</option>
+                <option value="3">3分</option>
+                <option value="5">5分</option>
+                <option value="8">8分</option>
+                <option value="10">10分</option>
+                <option value="12" selected>12分 (浅野学園等)</option>
+                <option value="15">15分</option>
+                <option value="20">20分</option>
+            </select>
+        </div>
+
+        <div class="train-section">
+            <h2>上り</h2>
+            <div class="departure-info">出発地: 浅野学園 ｜ 徒歩: <span id="walkDisplayUp">12</span>分</div>
+            <div id="upTrains">
+                <div class="no-train">読み込み中...</div>
+            </div>
+        </div>
+
+        <div class="train-section">
+            <h2>下り</h2>
+            <div class="departure-info">出発地: 浅野学園 ｜ 徒歩: <span id="walkDisplayDown">12</span>分</div>
+            <div id="downTrains">
+                <div class="no-train">読み込み中...</div>
+            </div>
+        </div>
     </div>
-  </body>
+
+    <script>
+        function updateClock() {
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = now.getMonth() + 1;
+            const d = now.getDate();
+            const days = ['日', '月', '火', '水', '木', '金', '土'];
+            const dayOfWeek = days[now.getDay()];
+
+            document.getElementById('dateDisplay').textContent = `${y}年${m}月${d}日（${dayOfWeek}）`;
+            
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            const ss = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('timeDisplay').textContent = `${hh}:${mm}:${ss}`;
+        }
+
+        function fetchTrainData() {
+            const walkMin = document.getElementById('walkSelect').value;
+            document.getElementById('walkDisplayUp').textContent = walkMin;
+            document.getElementById('walkDisplayDown').textContent = walkMin;
+
+            fetch(`/api/trains?walk=${walkMin}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('dayType').textContent = data.dayType;
+                    renderTrains('upTrains', data.up);
+                    renderTrains('downTrains', data.down);
+                })
+                .catch(err => console.error('Error fetching trains:', err));
+        }
+
+        function renderTrains(containerId, trains) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            if (!trains || trains.length === 0) {
+                container.innerHTML = '<div class="no-train">本日の残りの電車はありません</div>';
+                return;
+            }
+
+            trains.forEach((train, index) => {
+                const label = (index === 0) ? '先発' : '次発';
+                const badgeClass = (train.type === '快速') ? 'badge-rapid' : 'badge-normal';
+
+                // 残り秒数を「〇分〇秒」にフォーマット
+                const remSec = train.remainingSec;
+                const m = Math.floor(remSec / 60);
+                const s = remSec % 60;
+                const countdownText = `残り時間: ${m}分${s}秒（リミット: ${train.leaveTime.substring(0, 5)}）`;
+
+                const card = document.createElement('div');
+                card.className = 'train-card';
+                card.innerHTML = `
+                    <div class="train-card-header">
+                        <span class="train-label">${label}</span>
+                        <span class="train-badge ${badgeClass}">${train.type}</span>
+                        <span class="train-text-main">${train.destination}行 ｜ ${train.time}発 ｜ ${train.cars}両</span>
+                    </div>
+                    <div class="countdown">${countdownText}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 初期実行 & 定期更新
+        updateClock();
+        fetchTrainData();
+
+        setInterval(updateClock, 1000);
+        setInterval(fetchTrainData, 5000); // 5秒ごとにAPIから安全に最新データを取得
+    </script>
+</body>
 </html>
