@@ -253,7 +253,7 @@
           // 0.0秒未満になったら削除
           if (remainingPrecise <= 0) continue;
 
-          // 切り捨てルールに基づく残り秒数計算
+          // ご指定の切り捨てルール（例: 49.01〜50.00秒なら残り10秒）
           let totalRemainingSecInt = Math.ceil(remainingPrecise) - 1;
           if (totalRemainingSecInt < 0) continue;
 
@@ -283,24 +283,29 @@
         return html === "" ? "<p style='text-align:center; color:#777; font-size:1.1em;'>本日の残りの電車はありません</p>" : html;
       }
 
-      // ── 高精度ループ制御（ドリフト補正システム） ──
-      let expectedTime = Date.now() + 1000;
+      // ── 超高精度リアルタイム・ループ制御 ──
+      // 秒が変わった瞬間（ミリ秒が切り替わった瞬間）を逃さず描画するため、
+      // requestAnimationFrameで常に現在時刻を監視し、秒数が進んだタイミングでrenderを実行します。
+      let lastRenderedSecond = -1;
 
       function highPrecisionLoop() {
-        let dt = Date.now() - expectedTime; // ズレたミリ秒数を検出
-        if (dt > 1000) dt = 0; // 万が一スリープ復帰などで大きくズレた場合の保険
-        
-        render(); // 画面を更新
-        
-        expectedTime += 1000;
-        // 次の実行タイミングを、発生したズレ（dt）を相殺して厳密に1秒後に調整
-        setTimeout(highPrecisionLoop, Math.max(0, 1000 - dt));
+        let now = new Date();
+        let currentSecond = now.getSeconds();
+        let currentMillisecond = now.getMilliseconds();
+
+        // 秒数が変わった、または初回起動時に即座に描画
+        // さらに、秒が変わる直前（例えば.950秒以降）はフレーム落ちを防ぐために強制描画を許容
+        if (currentSecond !== lastRenderedSecond) {
+          render();
+          lastRenderedSecond = currentSecond;
+        }
+
+        requestAnimationFrame(highPrecisionLoop);
       }
 
       window.onload = function() {
         fetchTrainData();
-        // 初回実行のスケジュール
-        setTimeout(highPrecisionLoop, 1000);
+        requestAnimationFrame(highPrecisionLoop);
       };
     </script>
   </head>
