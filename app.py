@@ -1,17 +1,16 @@
 import csv
 import io
+import json
 import os
 import re
 from datetime import datetime, timedelta, timezone
+import urllib.request
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
 # 日本時間（JST = UTC+9）のタイムゾーン定義
 JST = timezone(timedelta(hours=9))
-
-# 内閣府の祝日CSVファイル名
-CSV_FILE_NAME = "syukujitsu.csv"
 
 def check_is_holiday(date):
     month = date.month
@@ -26,21 +25,22 @@ def check_is_holiday(date):
     if day_of_week == 5 or day_of_week == 6:
         return True
 
-    # ③ 内閣府のCSVから日付（1列目）のみを読み込んで判定
+    # ③ 外部の祝日API（https://holidays-jp.github.io/api/v1/date.json）から取得して判定
     try:
-        target_str = date.strftime('%Y/%m/%d') # 内閣府CSVは "2026/08/11" の形式
+        url = "https://holidays-jp.github.io/api/v1/date.json"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         
-        if os.path.exists(CSV_FILE_NAME):
-            # 文字化け対策として encoding='shift_jis' で読み込む
-            with open(CSV_FILE_NAME, 'r', encoding='shift_jis', errors='ignore') as f:
-                reader = csv.reader(f)
-                next(reader) # ヘッダー行をスキップ
-                for row in reader:
-                    # row[0]（1列目の日付）のみをチェックし、2列目の祝日名は完全に無視する
-                    if len(row) > 0 and row[0] == target_str:
-                        return True
+        # ネットワークからJSONデータを取得（軽量なため毎回取得しても高速ですが、必要に応じてキャッシュも可能）
+        with urllib.request.urlopen(req, timeout=3) as response:
+            holidays = json.loads(response.read().decode('utf-8'))
+            
+            # APIのフォーマットは "2026-08-11" の形式
+            target_str = date.strftime('%Y-%m-%d')
+            
+            if target_str in holidays:
+                return True
     except Exception as e:
-        print(f"CSV Read Error: {e}")
+        print(f"Holidays API Error: {e}")
 
     return False
 
