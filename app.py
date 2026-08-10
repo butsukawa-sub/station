@@ -26,15 +26,17 @@ def check_is_holiday(date):
     if day_of_week == 5 or day_of_week == 6:
         return True
 
-    # ③ 内閣府の祝日CSVデータから判定（春分の日・秋分の日・山の日なども完全網羅）
+    # ③ 内閣府のCSVから日付（1列目）のみを読み込んで判定
     try:
         target_str = date.strftime('%Y/%m/%d') # 内閣府CSVは "2026/08/11" の形式
         
         if os.path.exists(CSV_FILE_NAME):
+            # 文字化け対策として encoding='shift_jis' で読み込む
             with open(CSV_FILE_NAME, 'r', encoding='shift_jis', errors='ignore') as f:
                 reader = csv.reader(f)
                 next(reader) # ヘッダー行をスキップ
                 for row in reader:
+                    # row[0]（1列目の日付）のみをチェックし、2列目の祝日名は完全に無視する
                     if len(row) > 0 and row[0] == target_str:
                         return True
     except Exception as e:
