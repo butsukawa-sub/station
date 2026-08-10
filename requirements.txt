@@ -2,3 +2,4 @@ Flask
 gunicorn
 gspread
 google-auth
+google-api-python-client
