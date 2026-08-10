@@ -187,7 +187,7 @@
       function render() {
         let realNow = new Date();
         
-        // 【修正点】毎回確実に最新の時刻（realNow）から日付を計算し直すことで、0:00になった瞬間に日付が切り替わります
+        // ダイヤ計算用の日付（深夜3時までは前日扱い）
         let trainDateObj = new Date(realNow.getTime());
         if (realNow.getHours() < 3) {
           trainDateObj.setDate(trainDateObj.getDate() - 1);
@@ -199,7 +199,23 @@
         let weekdays = ['日', '月', '火', '水', '木', '金', '土'];
         let weekdayStr = weekdays[trainDateObj.getDay()];
 
-        let fullDateString = `${yearWestern}年${month}月${day}日（${weekdayStr}）`;
+        // 【追加】祝日名や年末年始の判定をフロント側でも行い、表示文字列を切り替える
+        let monthDayKey = `${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        let fullMonthDayKey = `${yearWestern}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        
+        // 年末年始判定（12月30日〜1月3日）
+        let isNewYear = (month === 12 && (day === 30 || day === 31)) || (month === 1 && (day >= 1 && day <= 3));
+        
+        let dateSuffix = `（${weekdayStr}）`;
+        if (isNewYear) {
+          dateSuffix = `（${weekdayStr}）（年末年始期間）`;
+        } else if (currentData.isHoliday) {
+          // バックエンド（Flask側）から祝日名を受け取るか、簡易的に祝日表示にする
+          let holidayName = currentData.holidayName || "祝日";
+          dateSuffix = `（${weekdayStr}）・祝日（${holidayName}）`;
+        }
+
+        let fullDateString = `${yearWestern}年${month}月${day}日` + dateSuffix;
 
         let timeStr = String(realNow.getHours()).padStart(2, '0') + ":" + 
                     String(realNow.getMinutes()).padStart(2, '0') + ":" + 
