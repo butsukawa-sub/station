@@ -1,14 +1,16 @@
+import csv
+import io
 import os
-import re
 from datetime import datetime, timedelta, timezone
 from flask import Flask, render_template, request, jsonify
-# GoogleカレンダーAPI用ライブラリを追加（pip install google-api-python-client google-auth）
-from googleapiclient.discovery import build
 
 app = Flask(__name__)
 
 # 日本時間（JST = UTC+9）のタイムゾーン定義
 JST = timezone(timedelta(hours=9))
+
+# 内閣府の祝日CSVファイル名
+CSV_FILE_NAME = "syukujitsu.csv"
 
 def check_is_holiday(date):
     month = date.month
@@ -23,28 +25,19 @@ def check_is_holiday(date):
     if day_of_week == 5 or day_of_week == 6:
         return True
 
-    # ③ Googleカレンダーの日本の祝日カレンダーから判定
+    # ③ 内閣府の祝日CSVデータから判定（春分の日・秋分の日・山の日なども完全網羅）
     try:
-        # Google公式の日本の祝日カレンダーIDを使用（APIキー不要の公開カレンダー）
-        service = build('calendar', 'v3', cache_discovery=False)
-        target_str = date.strftime('%Y-%m-%d')
+        target_str = date.strftime('%Y/%m/%d') # 内閣府CSVは "2026/08/11" の形式
         
-        # その日の開始と終了時刻でイベントを検索
-        time_min = f"{target_str}T00:00:00Z"
-        time_max = f"{target_str}T23:59:59Z"
-        
-        events_result = service.events().list(
-            calendarId='japanese__ja@holiday.calendar.google.com',
-            timeMin=time_min,
-            timeMax=time_max,
-            singleEvents=True
-        ).execute()
-        
-        events = events_result.get('items', [])
-        if len(events) > 0:
-            return True
+        if os.path.exists(CSV_FILE_NAME):
+            with open(CSV_FILE_NAME, 'r', encoding='shift_jis', errors='ignore') as f:
+                reader = csv.reader(f)
+                next(reader) # ヘッダー行をスキップ
+                for row in reader:
+                    if len(row) > 0 and row[0] == target_str:
+                        return True
     except Exception as e:
-        print(f"Google Calendar API Error: {e}")
+        print(f"CSV Read Error: {e}")
 
     return False
 
