@@ -2,6 +2,8 @@ import os
 import re
 from datetime import datetime, timedelta, timezone
 from flask import Flask, render_template, request, jsonify
+# GoogleカレンダーAPI用ライブラリを追加（pip install google-api-python-client google-auth）
+from googleapiclient.discovery import build
 
 app = Flask(__name__)
 
@@ -21,13 +23,28 @@ def check_is_holiday(date):
     if day_of_week == 5 or day_of_week == 6:
         return True
 
-    # ③ 日本の祝日判定
+    # ③ Googleカレンダーの日本の祝日カレンダーから判定
     try:
-        import jpholiday
-        if jpholiday.is_holiday(date):
+        # Google公式の日本の祝日カレンダーIDを使用（APIキー不要の公開カレンダー）
+        service = build('calendar', 'v3', cache_discovery=False)
+        target_str = date.strftime('%Y-%m-%d')
+        
+        # その日の開始と終了時刻でイベントを検索
+        time_min = f"{target_str}T00:00:00Z"
+        time_max = f"{target_str}T23:59:59Z"
+        
+        events_result = service.events().list(
+            calendarId='japanese__ja@holiday.calendar.google.com',
+            timeMin=time_min,
+            timeMax=time_max,
+            singleEvents=True
+        ).execute()
+        
+        events = events_result.get('items', [])
+        if len(events) > 0:
             return True
-    except ImportError:
-        pass
+    except Exception as e:
+        print(f"Google Calendar API Error: {e}")
 
     return False
 
