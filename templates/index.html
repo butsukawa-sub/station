@@ -208,11 +208,13 @@
         
         let dateSuffix = `（${weekdayStr}）`;
         if (isNewYear) {
-          dateSuffix = `（${weekdayStr}）（年末年始期間）`;
+          dateSuffix = ` ${weekdayStr}曜日（年末年始期間）`;
         } else if (currentData.isHoliday) {
-          // バックエンド（Flask側）から祝日名を受け取るか、簡易的に祝日表示にする
           let holidayName = currentData.holidayName || "祝日";
-          dateSuffix = `（${weekdayStr}）・祝日（${holidayName}）`;
+          // ここを「火曜日・祝日（山の日）」の形式に組み立て直します
+          dateSuffix = ` ${weekdayStr}曜日・祝日（${holidayName}）`;
+        } else {
+          dateSuffix = ` ${weekdayStr}曜日`;
         }
 
         let fullDateString = `${yearWestern}年${month}月${day}日` + dateSuffix;
