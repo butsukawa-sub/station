@@ -49,28 +49,23 @@ def parse_timetable_from_file(file_path, direction):
     timetable = []
     current_hour = 0
     
-    # すべてのトークン（単語・数字）に分解して順番に処理する
-    # 例: ["4時", "27", "40", "50", "5時", "01", ...] のようなフラットなリストにする
     tokens = content.split()
     
     i = 0
     while i < len(tokens):
         token = tokens[i]
         
-        # 「〇時」という形式のトークンかチェック
         hour_match = re.search(r'(\d+)時', token)
         if hour_match:
             current_hour = int(hour_match.group(1))
             i += 1
             continue
             
-        # 単に数字だけで、次のトークンが「時」のケース（まれにある構造対策）
         if token.isdigit() and i + 1 < len(tokens) and tokens[i+1] == "時":
             current_hour = int(token)
             i += 2
             continue
 
-        # 種別（快）の処理
         train_type_prefix = ""
         if token == "快":
             train_type_prefix = "快"
@@ -80,12 +75,10 @@ def parse_timetable_from_file(file_path, direction):
             else:
                 break
 
-        # 分数の数値かチェック
         if token.isdigit():
             minute = int(token)
             dest_code = ""
             
-            # 次のトークンが宛先コード（浦、赤、上、蒲、磯、桜、神）かチェック
             if i + 1 < len(tokens) and tokens[i+1] in ["浦", "赤", "上", "蒲", "磯", "桜", "神"]:
                 dest_code = tokens[i+1]
                 i += 1
@@ -216,8 +209,19 @@ def api_trains():
         up_file = "timetable/h_i.txt"
         down_file = "timetable/h_o.txt"
         day_type_str = "平日ダイヤ"
+
+    # 【復旧】時刻表ファイルを読み込んで次発の電車を計算する処理
+    try:
+        up_timetable = parse_timetable_from_file(up_file, "up")
+        next_up_trains = find_next_trains(up_timetable, current_total_sec, current_hour, walk_time_sec)
+
+        down_timetable = parse_timetable_from_file(down_file, "down")
+        next_down_trains = find_next_trains(down_timetable, current_total_sec, current_hour, walk_time_sec)
+    except Exception as e:
+        print(f"Error reading timetable files: {e}")
+        next_up_trains = []
+        next_down_trains = []
         
-    # JSONに isHoliday と holidayName を含める
     return jsonify({
         "dayType": day_type_str,
         "isHoliday": is_holiday,
