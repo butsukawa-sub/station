@@ -15,34 +15,28 @@ JST = timezone(timedelta(hours=9))
 def check_is_holiday(date):
     month = date.month
     day = date.day
-    day_of_week = date.weekday() # 0:月, 1:火, 2:水, 3:木, 4:金, 5:土, 6:日
+    day_of_week = date.weekday()
 
-    # ① 年末年始（12月30日〜1月3日）は無条件で土休日
     if (month == 12 and (day == 30 or day == 31)) or (month == 1 and (1 <= day <= 3)):
-        return True
+        return True, "年末年始"
 
-    # ② 土曜日・日曜日の判定
     if day_of_week == 5 or day_of_week == 6:
-        return True
+        return True, "土曜日" if day_of_week == 5 else "日曜日"
 
-    # ③ 外部の祝日API（https://holidays-jp.github.io/api/v1/date.json）から取得して判定
     try:
         url = "https://holidays-jp.github.io/api/v1/date.json"
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         
-        # ネットワークからJSONデータを取得（軽量なため毎回取得しても高速ですが、必要に応じてキャッシュも可能）
         with urllib.request.urlopen(req, timeout=3) as response:
             holidays = json.loads(response.read().decode('utf-8'))
-            
-            # APIのフォーマットは "2026-08-11" の形式
             target_str = date.strftime('%Y-%m-%d')
             
             if target_str in holidays:
-                return True
+                return True, holidays[target_str] # 例: "山の日"
     except Exception as e:
         print(f"Holidays API Error: {e}")
 
-    return False
+    return False, ""
 
 def parse_timetable_from_file(file_path, direction):
     """GitHub内にあるテキストファイルから時刻表をパースする"""
