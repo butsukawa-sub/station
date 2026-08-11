@@ -206,9 +206,8 @@ def api_trains():
     current_total_sec = current_hour * 3600 + current_minute * 60 + current_second
     walk_time_sec = walk_minutes * 60
 
-    is_holiday = check_is_holiday(target_date)
+    is_holiday, holiday_name = check_is_holiday(target_date)
     
-    # ダイヤに応じて読み込むファイルを切り替え
     if is_holiday:
         up_file = "timetable/d_i.txt"
         down_file = "timetable/d_o.txt"
@@ -217,20 +216,12 @@ def api_trains():
         up_file = "timetable/h_i.txt"
         down_file = "timetable/h_o.txt"
         day_type_str = "平日ダイヤ"
-
-    try:
-        up_timetable = parse_timetable_from_file(up_file, "up")
-        next_up_trains = find_next_trains(up_timetable, current_total_sec, current_hour, walk_time_sec)
-
-        down_timetable = parse_timetable_from_file(down_file, "down")
-        next_down_trains = find_next_trains(down_timetable, current_total_sec, current_hour, walk_time_sec)
-    except Exception as e:
-        print(f"Error reading timetable files: {e}")
-        next_up_trains = []
-        next_down_trains = []
-
+        
+    # JSONに isHoliday と holidayName を含める
     return jsonify({
         "dayType": day_type_str,
+        "isHoliday": is_holiday,
+        "holidayName": holiday_name,
         "up": next_up_trains,
         "down": next_down_trains
     })
