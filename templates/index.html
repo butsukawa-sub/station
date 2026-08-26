@@ -315,8 +315,7 @@
 
         let currentPreciseSec = currentHour * 3600 + currentMin * 60 + currentSec + currentMs / 1000;
 
-        // 【修正点】深夜0時〜3時未満の場合、現在時刻の秒数に24時間分（86400秒）を足して、
-        // バックエンドから送られてくる24時台以降の電車の時間と正しく大小比較できるようにする
+        // 深夜帯（0時〜3時未満）なら現在時刻に24時間分を足す
         let isLateNight = (currentHour >= 0 && currentHour < 3);
         if (isLateNight) {
           currentPreciseSec += 86400;
@@ -331,15 +330,16 @@
           let trainMin = parseInt(timeParts[1], 10);
           let trainSec = trainHour * 3600 + trainMin * 60;
           
-          let leavePreciseSec = trainSec - walkSec;
-          
-          // バックエンドの電車の時間が深夜帯（0時〜3時未満に発車する、または24時以降の表記）の場合
-          // ※もしバックエンドが24時以降を「24:xx」などで返している場合はそのままでOKですが、
-          // 念のため、現在時刻が深夜帯で、電車の時間が朝3時未満の場合は日付またぎとして +86400秒 を加算します
-          if (isLateNight && trainHour < 3) {
-            leavePreciseSec += 86400;
+          // ★重要：現在が23時台で、電車の時間が0時〜3時台なら、翌日の時間（+86400秒）として扱う
+          if (currentHour === 23 && trainHour >= 0 && trainHour < 3) {
+            trainSec += 86400;
+          }
+          // もし現在がすでに深夜帯（0時〜3時未満）で、電車の時間も深夜帯の場合も同様に補正
+          else if (isLateNight && trainHour < 3) {
+            trainSec += 86400;
           }
 
+          let leavePreciseSec = trainSec - walkSec;
           let remainingPrecise = leavePreciseSec - currentPreciseSec;
           
           if (remainingPrecise <= 0) continue;
