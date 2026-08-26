@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>次発電車リアルタイム案内</title>
     
-    <link id="favicon" rel="icon" href="{{ url_for('static', filename='icon.png') }}" type="image/png">
+    <link id="favicon" rel="icon" href="{{ url_for('static', filename='jk14.avif') }}" type="image/png">
 
     <style>
       /* ==========================================
@@ -216,7 +216,7 @@
       let lastFetchedTime = 0;
       let currentLine = 'jr'; // 現在選択されている路線 ('jr' または 'keikyu')
 
-      const ICON_URL_JR = "{{ url_for('static', filename='icon.png') }}";
+      const ICON_URL_JR = "{{ url_for('static', filename='jk14.avif') }}";
       const ICON_URL_KEIKYU = "{{ url_for('static', filename='kk32.avif') }}";
 
       function switchLine(line) {
@@ -410,7 +410,7 @@
         <!-- 駅名・路線選択ボタンエリア -->
         <div class="station-selector">
           <button id="btn-jr" class="line-btn jr active" onclick="switchLine('jr')">
-            <img src="{{ url_for('static', filename='icon.png') }}" alt="JR icon" class="station-inline-icon">ＪＲ新子安駅
+            <img src="{{ url_for('static', filename='jk14.avif') }}" alt="JR icon" class="station-inline-icon">ＪＲ新子安駅
           </button>
           <button id="btn-keikyu" class="line-btn keikyu" onclick="switchLine('keikyu')">
             <img src="{{ url_for('static', filename='kk32.avif') }}" alt="Keikyu icon" class="station-inline-icon">京急新子安駅
