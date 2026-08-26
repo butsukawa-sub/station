@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>次発電車リアルタイム案内</title>
     
-    <link rel="icon" href="{{ url_for('static', filename='icon.png') }}" type="image/png">
+    <link id="favicon" rel="icon" href="{{ url_for('static', filename='icon.png') }}" type="image/png">
 
     <style>
       /* ==========================================
@@ -33,12 +33,11 @@
         gap: 8px;
       }
 
-      /* ＠のすぐ隣に置くアイコン */
+      /* ボタン内のアイコン */
       .station-inline-icon {
         height: 1.4em;
         width: auto;
         vertical-align: middle;
-        margin-left: 2px;
         margin-right: 4px;
       }
 
@@ -147,6 +146,15 @@
       /* 期限 */
       .countdown { color: #d9534f; font-weight: bold; font-size: 1.0em; } 
 
+      /* 注記テキスト（京急選択時にカード下へ表示） */
+      .note-text {
+        text-align: center;
+        font-size: 0.9em;
+        color: #666;
+        margin-top: 10px;
+        font-weight: bold;
+      }
+
 
       /* ==========================================
          スマホ版向け個別調整（コンパクト化）
@@ -208,13 +216,30 @@
       let lastFetchedTime = 0;
       let currentLine = 'jr'; // 現在選択されている路線 ('jr' または 'keikyu')
 
+      const ICON_URL_JR = "{{ url_for('static', filename='icon.png') }}";
+      const ICON_URL_KEIKYU = "{{ url_for('static', filename='keikyu.png') }}";
+
       function switchLine(line) {
         if (currentLine === line) return;
         currentLine = line;
 
-        // ボタンの表示状態を切り替え
+        // ボタンの表示状態切り替え
         document.getElementById('btn-jr').classList.toggle('active', line === 'jr');
         document.getElementById('btn-keikyu').classList.toggle('active', line === 'keikyu');
+
+        // ファビコン（タブ画像）の変更
+        document.getElementById('favicon').href = (line === 'keikyu') ? ICON_URL_KEIKYU : ICON_URL_JR;
+
+        // 見出しタイトル（行先案内）の変更
+        if (line === 'keikyu') {
+          document.getElementById('up-title').innerText = "上り（川崎、蒲田、泉岳寺方面）";
+          document.getElementById('down-title').innerText = "下り（横浜、上大岡、浦賀方面）";
+          document.getElementById('keikyu-note').style.display = "block";
+        } else {
+          document.getElementById('up-title').innerText = "上り（川崎・東京・上野・大宮方面）";
+          document.getElementById('down-title').innerText = "下り（横浜・桜木町・関内・大船方面）";
+          document.getElementById('keikyu-note').style.display = "none";
+        }
 
         fetchTrainData();
       }
@@ -326,6 +351,12 @@
             badgeClass = "type-ltdexp";
           }
 
+          // 「羽田空港第１・第２ターミナル」の表記省略化
+          let destName = t.destination;
+          if (destName === "羽田空港第１・第２ターミナル") {
+            destName = "羽田空港";
+          }
+
           let labelText = labels[validCount] || "次発";
           validCount++;
           
@@ -341,7 +372,7 @@
               <div class="train-details">
                 <div class="train-row">
                   <span class="train-badge ${badgeClass}">${t.type}</span>
-                  <span class="train-text-main">${t.destination}行｜${t.time}発｜${t.cars}両</span>
+                  <span class="train-text-main">${destName}行｜${t.time}発｜${t.cars}両</span>
                 </div>
                 <div class="countdown">残り時間: ${countStr}（リミット: ${leaveTimeShort}）</div>
               </div>
@@ -379,10 +410,10 @@
         <!-- 駅名・路線選択ボタンエリア -->
         <div class="station-selector">
           <button id="btn-jr" class="line-btn jr active" onclick="switchLine('jr')">
-            ＠<img src="{{ url_for('static', filename='icon.png') }}" alt="icon" class="station-inline-icon">ＪＲ新子安駅
+            <img src="{{ url_for('static', filename='icon.png') }}" alt="JR icon" class="station-inline-icon">ＪＲ新子安駅
           </button>
           <button id="btn-keikyu" class="line-btn keikyu" onclick="switchLine('keikyu')">
-            京急新子安駅
+            <img src="{{ url_for('static', filename='keikyu.png') }}" alt="Keikyu icon" class="station-inline-icon">京急新子安駅
           </button>
         </div>
         <span id="day-type-box" class="day-type-badge">--ダイヤ</span>
@@ -430,16 +461,21 @@
 
     <div class="container">
       <div class="card">
-        <h2>上り（川崎・東京・上野・大宮方面）</h2>
+        <h2 id="up-title">上り（川崎・東京・上野・大宮方面）</h2>
         <div id="up-departure-info" class="departure-info">出発地: 浅野学園｜徒歩: 12分</div>
         <div id="up-content">読み込み中...</div>
       </div>
       
       <div class="card">
-        <h2>下り（横浜・桜木町・関内・大船方面）</h2>
+        <h2 id="down-title">下り（横浜・桜木町・関内・大船方面）</h2>
         <div id="down-departure-info" class="departure-info">出発地: 浅野学園｜徒歩: 12分</div>
         <div id="down-content">読み込み中...</div>
       </div>
+    </div>
+
+    <!-- 京急選択時のみ表示される注記テキスト -->
+    <div id="keikyu-note" class="note-text" style="display: none;">
+      ※羽田空港＝羽田空港第１・第２ターミナル
     </div>
   </body>
 </html>
