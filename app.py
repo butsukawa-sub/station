@@ -38,17 +38,52 @@ def check_is_holiday(date):
 
     return False, ""
 
-def parse_timetable_from_file(file_path, direction):
-    """GitHub内にあるテキストファイルから時刻表をパースする"""
-    if not os.path.exists(file_path):
-        return []
+def parse_keikyu_timetable(content, direction):
+    """京急形式（05:12\t普通\t浦賀行き 等）の時刻表テキストをパースする"""
+    timetable = []
+    lines = content.splitlines()
+    current_hour = 0
 
-    with open(file_path, 'r', encoding='utf-8') as f:
-        content = f.read()
+    for line in lines:
+        line_str = line.strip()
+        if not line_str:
+            continue
 
+        # 「05時」などの時間見出し判定
+        hour_header_match = re.match(r'^(\d{1,2})時$', line_str)
+        if hour_header_match:
+            current_hour = int(hour_header_match.group(1))
+            continue
+
+        # 「05:12\t普通\t浦賀行き」等の行判定
+        time_match = re.match(r'^(\d{1,2}):(\d{2})\s+([^\s]+)\s+([^\s]+)', line_str)
+        if time_match:
+            h = int(time_match.group(1))
+            m = int(time_match.group(2))
+            train_type = time_match.group(3)
+            dest = time_match.group(4)
+
+            # 「行き」を削って統一表記にする
+            dest = dest.replace("行き", "")
+
+            adjusted_hour = h
+            if 0 <= h < 3:
+                adjusted_hour += 24 # 深夜帯のソート調整
+
+            timetable.append({
+                "hour": h,
+                "sortHour": adjusted_hour,
+                "minute": m,
+                "type": train_type,
+                "dest": dest
+            })
+
+    return timetable
+
+def parse_jr_timetable(content, direction):
+    """JR形式（既存の略称表記ベース）の時刻表テキストをパースする"""
     timetable = []
     current_hour = 0
-    
     tokens = content.split()
     
     i = 0
@@ -100,6 +135,21 @@ def parse_timetable_from_file(file_path, direction):
                 })
         i += 1
 
+    return timetable
+
+def parse_timetable_from_file(file_path, direction, line_type="jr"):
+    """ファイルから時刻表を読み込み、路線フォーマットに応じてパースする"""
+    if not os.path.exists(file_path):
+        return []
+
+    with open(file_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    if line_type == "keikyu":
+        timetable = parse_keikyu_timetable(content, direction)
+    else:
+        timetable = parse_jr_timetable(content, direction)
+
     timetable.sort(key=lambda x: (x["sortHour"] * 60 + x["minute"]))
     return timetable
 
@@ -130,9 +180,9 @@ def parse_train_line(line, direction):
 
 def get_up_destination_name(code):
     if code == "浦": return "南浦和"
-    elif code == "蒲": return "蒲田"
-    elif code == "上": return "上野"
     elif code == "赤": return "赤羽"
+    elif code == "上": return "上野"
+    elif code == "蒲": return "蒲田"
     else: return "大宮"
 
 def get_down_destination_name(code):
@@ -187,6 +237,11 @@ def api_trains():
     except ValueError:
         walk_minutes = 12
 
+    # 路線パラメータを取得（jr または keikyu）
+    line_type = request.args.get('line', 'jr')
+    if line_type not in ['jr', 'keikyu']:
+        line_type = 'jr'
+
     now = datetime.now(JST)
     current_hour = now.hour
     current_minute = now.minute
@@ -201,21 +256,22 @@ def api_trains():
 
     is_holiday, holiday_name = check_is_holiday(target_date)
     
+    timetable_dir = f"timetable-{line_type}"
+
     if is_holiday:
-        up_file = "timetable/d_i.txt"
-        down_file = "timetable/d_o.txt"
+        up_file = os.path.join(timetable_dir, "d_i.txt")
+        down_file = os.path.join(timetable_dir, "d_o.txt")
         day_type_str = "土休日ダイヤ"
     else:
-        up_file = "timetable/h_i.txt"
-        down_file = "timetable/h_o.txt"
+        up_file = os.path.join(timetable_dir, "h_i.txt")
+        down_file = os.path.join(timetable_dir, "h_o.txt")
         day_type_str = "平日ダイヤ"
 
-    # 【復旧】時刻表ファイルを読み込んで次発の電車を計算する処理
     try:
-        up_timetable = parse_timetable_from_file(up_file, "up")
+        up_timetable = parse_timetable_from_file(up_file, "up", line_type)
         next_up_trains = find_next_trains(up_timetable, current_total_sec, current_hour, walk_time_sec)
 
-        down_timetable = parse_timetable_from_file(down_file, "down")
+        down_timetable = parse_timetable_from_file(down_file, "down", line_type)
         next_down_trains = find_next_trains(down_timetable, current_total_sec, current_hour, walk_time_sec)
     except Exception as e:
         print(f"Error reading timetable files: {e}")
@@ -223,6 +279,7 @@ def api_trains():
         next_down_trains = []
         
     return jsonify({
+        "line": line_type,
         "dayType": day_type_str,
         "isHoliday": is_holiday,
         "holidayName": holiday_name,
