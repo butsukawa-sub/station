@@ -22,18 +22,56 @@
         justify-content: center; 
         align-items: center; 
         gap: 12px; 
-        margin-bottom: 6px; 
+        margin-bottom: 8px; 
         flex-wrap: wrap; 
       }
-      .station-name { font-size: 1.25em; font-weight: bold; color: #555; display: inline-flex; align-items: center; }
       
-      /* ＠のすぐ隣に置くアイコン（文字より大きめに調整：1.5em） */
+      /* 路線切り替えボタンエリア */
+      .station-selector {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* ＠のすぐ隣に置くアイコン */
       .station-inline-icon {
-        height: 1.5em;          /* 文字より大きめのサイズに設定 */
+        height: 1.4em;
         width: auto;
         vertical-align: middle;
-        margin-left: 2px;       /* ＠（新子安駅…）との距離を詰める */
-        margin-right: 2px;
+        margin-left: 2px;
+        margin-right: 4px;
+      }
+
+      /* 路線選択ボタン基本スタイル */
+      .line-btn {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border: 1px solid #aaa;
+        border-radius: 6px;
+        font-weight: bold;
+        font-size: 1.05em;
+        cursor: pointer;
+        background-color: #d6d6d6; /* 非選択時：背景灰色 */
+        color: #444;
+        transition: all 0.2s ease;
+      }
+      .line-btn:hover {
+        opacity: 0.9;
+      }
+
+      /* JR新子安駅：選択時（背景薄水） */
+      .line-btn.jr.active {
+        background-color: #e0f7fa;
+        border-color: #00bcd4;
+        color: #006064;
+      }
+
+      /* 京急新子安駅：選択時（背景薄赤） */
+      .line-btn.keikyu.active {
+        background-color: #ffebee;
+        border-color: #ef5350;
+        color: #c62828;
       }
 
       .day-type-badge { background: #ffc107; color: #333; padding: 3px 12px; border-radius: 12px; font-weight: bold; font-size: 1.1em; }
@@ -86,7 +124,7 @@
       .train-label { font-size: 1.2em; font-weight: bold; color: #333; width: 65px; flex-shrink: 0; text-align: center; background: #e9ecef; padding: 6px 0; border-radius: 5px; margin-right: 10px; }
       .train-details { text-align: left; width: 100%; }
 
-      /* 種別 */
+      /* 種別バッジ */
       .train-badge {
         display: inline-block;
         padding: 4px 14px;
@@ -96,8 +134,10 @@
         text-align: center;
         font-size: 1.25em;
       }
-      .type-rapid { background-color: #e83e8c; }
-      .type-local { background-color: #17a2b8; }
+      /* 種別ごとの背景色指定 */
+      .type-rapid { background-color: #e83e8c; }  /* JR 快速 */
+      .type-local { background-color: #17a2b8; }  /* 普通 */
+      .type-ltdexp { background-color: #d9534f; } /* 快特・特急 */
 
       .train-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
       
@@ -114,8 +154,8 @@
       @media screen and (max-width: 1023px) {
         body { padding: 8px; }
         h1 { font-size: 1.2em; }
-        .station-name { font-size: 0.9em; }
-        .station-inline-icon { height: 1.4em; } /* スマホでも文字より大きめを維持 */
+        .line-btn { font-size: 0.85em; padding: 4px 8px; }
+        .station-inline-icon { height: 1.2em; }
         .day-type-badge { font-size: 0.85em; padding: 2px 8px; }
         .date-display { font-size: 0.9em; }
         .time-display { font-size: 1.8em; margin: 4px 0; }
@@ -150,7 +190,7 @@
           padding: 18px;
         }
         h1 { font-size: 2.1em; }
-        .station-name { font-size: 1.3em; }
+        .line-btn { font-size: 1.1em; padding: 6px 14px; }
         .day-type-badge { font-size: 1.15em; padding: 3px 12px; }
         .time-display { font-size: 3.0em; }
         .walk-time-selector { font-size: 1.1em; }
@@ -166,11 +206,23 @@
     <script>
       let currentData = { up: [], down: [], dayType: "" };
       let lastFetchedTime = 0;
+      let currentLine = 'jr'; // 現在選択されている路線 ('jr' または 'keikyu')
+
+      function switchLine(line) {
+        if (currentLine === line) return;
+        currentLine = line;
+
+        // ボタンの表示状態を切り替え
+        document.getElementById('btn-jr').classList.toggle('active', line === 'jr');
+        document.getElementById('btn-keikyu').classList.toggle('active', line === 'keikyu');
+
+        fetchTrainData();
+      }
 
       function fetchTrainData() {
         const walkMin = parseInt(document.getElementById('walk-time-select').value, 10);
         
-        fetch(`/api/trains?walk=${walkMin}`)
+        fetch(`/api/trains?walk=${walkMin}&line=${currentLine}`)
           .then(response => response.json())
           .then(data => {
             currentData = data;
@@ -199,11 +251,6 @@
         let weekdays = ['日', '月', '火', '水', '木', '金', '土'];
         let weekdayStr = weekdays[trainDateObj.getDay()];
 
-        // 【追加】祝日名や年末年始の判定をフロント側でも行い、表示文字列を切り替える
-        let monthDayKey = `${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        let fullMonthDayKey = `${yearWestern}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        
-        // 年末年始判定（12月30日〜1月3日）
         let isNewYear = (month === 12 && (day === 30 || day === 31)) || (month === 1 && (day >= 1 && day <= 3));
         
         let dateSuffix = `（${weekdayStr}）`;
@@ -211,7 +258,6 @@
           dateSuffix = ` ${weekdayStr}曜日（年末年始期間）`;
         } else if (currentData.isHoliday) {
           let holidayName = currentData.holidayName || "祝日";
-          // ここを「火曜日・祝日（山の日）」の形式に組み立て直します
           dateSuffix = ` ${weekdayStr}曜日・祝日（${holidayName}）`;
         } else {
           dateSuffix = ` ${weekdayStr}曜日`;
@@ -249,7 +295,6 @@
         let html = "";
         const labels = ["先発", "次発"];
         
-        // ミリ秒単位を含めた正確な現在秒（浮動小数点数）
         let currentPreciseSec = realNow.getHours() * 3600 + realNow.getMinutes() * 60 + realNow.getSeconds() + realNow.getMilliseconds() / 1000;
 
         let validCount = 0;
@@ -268,14 +313,19 @@
 
           let remainingPrecise = leavePreciseSec - adjustedCurrentSec;
           
-          // 0.0秒未満になったら削除
           if (remainingPrecise <= 0) continue;
 
-          // ご指定の切り捨てルール（例: 49.01〜50.00秒なら残り10秒）
           let totalRemainingSecInt = Math.ceil(remainingPrecise) - 1;
           if (totalRemainingSecInt < 0) continue;
 
-          let badgeClass = (t.type === "快速") ? "type-rapid" : "type-local";
+          // 種別に応じたバッジスタイルの判定
+          let badgeClass = "type-local";
+          if (t.type === "快速") {
+            badgeClass = "type-rapid";
+          } else if (t.type === "快特" || t.type === "特急") {
+            badgeClass = "type-ltdexp";
+          }
+
           let labelText = labels[validCount] || "次発";
           validCount++;
           
@@ -326,9 +376,15 @@
     <div class="header-area">
       <h1>次発電車リアルタイム案内</h1>
       <div class="sub-header-row">
-        <span class="station-name">
-          @<img src="{{ url_for('static', filename='icon.png') }}" alt="icon" class="station-inline-icon">新子安駅（JR東日本）
-        </span>
+        <!-- 駅名・路線選択ボタンエリア -->
+        <div class="station-selector">
+          <button id="btn-jr" class="line-btn jr active" onclick="switchLine('jr')">
+            ＠<img src="{{ url_for('static', filename='icon.png') }}" alt="icon" class="station-inline-icon">ＪＲ新子安駅
+          </button>
+          <button id="btn-keikyu" class="line-btn keikyu" onclick="switchLine('keikyu')">
+            京急新子安駅
+          </button>
+        </div>
         <span id="day-type-box" class="day-type-badge">--ダイヤ</span>
       </div>
       <div id="date-box" class="date-display">読み込み中...</div>
