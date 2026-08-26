@@ -217,7 +217,7 @@
       let currentLine = 'jr'; // 現在選択されている路線 ('jr' または 'keikyu')
 
       const ICON_URL_JR = "{{ url_for('static', filename='icon.png') }}";
-      const ICON_URL_KEIKYU = "{{ url_for('static', filename='keikyu.png') }}";
+      const ICON_URL_KEIKYU = "{{ url_for('static', filename='kk32.avif') }}";
 
       function switchLine(line) {
         if (currentLine === line) return;
@@ -413,7 +413,7 @@
             <img src="{{ url_for('static', filename='icon.png') }}" alt="JR icon" class="station-inline-icon">ＪＲ新子安駅
           </button>
           <button id="btn-keikyu" class="line-btn keikyu" onclick="switchLine('keikyu')">
-            <img src="{{ url_for('static', filename='keikyu.png') }}" alt="Keikyu icon" class="station-inline-icon">京急新子安駅
+            <img src="{{ url_for('static', filename='kk32.avif') }}" alt="Keikyu icon" class="station-inline-icon">京急新子安駅
           </button>
         </div>
         <span id="day-type-box" class="day-type-badge">--ダイヤ</span>
