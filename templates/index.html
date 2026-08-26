@@ -35,7 +35,7 @@
 
       /* ボタン内のアイコン（JRを大きめに調整） */
       .station-inline-icon {
-        height: 1.8em; /* ←ここを大きくしました */
+        height: 1.8em;
         width: auto;
         vertical-align: middle;
         margin-right: 6px;
@@ -51,7 +51,7 @@
         font-weight: bold;
         font-size: 1.05em;
         cursor: pointer;
-        background-color: #d6d6d6; /* 非選択時：背景灰色 */
+        background-color: #d6d6d6;
         color: #444;
         transition: all 0.2s ease;
       }
@@ -133,20 +133,15 @@
         text-align: center;
         font-size: 1.25em;
       }
-      /* 種別ごとの背景色指定 */
       .type-rapid { background-color: #e83e8c; }  /* JR 快速 */
       .type-local { background-color: #17a2b8; }  /* 普通 */
       .type-ltdexp { background-color: #d9534f; } /* 快特・特急 */
 
       .train-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
       
-      /* 行先・時間・両数 */
       .train-text-main { font-size: 1.15em; font-weight: bold; } 
-
-      /* 期限 */
       .countdown { color: #d9534f; font-weight: bold; font-size: 1.0em; } 
 
-      /* 注記テキスト（京急選択時にカード下へ表示） */
       .note-text {
         text-align: center;
         font-size: 0.9em;
@@ -155,7 +150,6 @@
         font-weight: bold;
       }
 
-
       /* ==========================================
          スマホ版向け個別調整（コンパクト化）
          ========================================== */
@@ -163,7 +157,7 @@
         body { padding: 8px; }
         h1 { font-size: 1.2em; }
         .line-btn { font-size: 0.85em; padding: 4px 8px; }
-        .station-inline-icon { height: 1.5em; } /* スマホ版のアイコンサイズ調整 */
+        .station-inline-icon { height: 1.5em; }
         .day-type-badge { font-size: 0.85em; padding: 2px 8px; }
         .date-display { font-size: 0.9em; }
         .time-display { font-size: 1.8em; margin: 4px 0; }
@@ -172,14 +166,12 @@
         h2 { font-size: 1.05em; }
         .departure-info { padding-bottom: 8px; font-size: 0.8em; }
         .train-label { font-size: 0.85em; width: 45px; padding: 3px 0; margin-right: 6px; }
-        
         .train-badge { font-size: 0.9em; padding: 2px 8px; }
         .train-text-main { font-size: 0.9em; font-weight: bold; }
         .countdown { font-size: 0.8em; }
         .train-item { padding: 8px 2px; }
         .card { padding: 10px; }
       }
-
 
       /* ==========================================
          PC版向け個別調整
@@ -205,7 +197,6 @@
         h2 { font-size: 1.5em; }
         .departure-info { padding-bottom: 12px; font-size: 1.05em; font-weight: bold; }
         .train-label { font-size: 1.2em; width: 70px; padding: 6px 0; }
-        
         .train-badge { font-size: 1.28em; padding: 4px 16px; }
         .train-text-main { font-size: 1.2em; font-weight: bold; }
         .countdown { font-size: 1.1em; }
@@ -214,7 +205,7 @@
     <script>
       let currentData = { up: [], down: [], dayType: "" };
       let lastFetchedTime = 0;
-      let currentLine = 'jr'; // 現在選択されている路線 ('jr' または 'keikyu')
+      let currentLine = 'jr';
 
       const ICON_URL_JR = "{{ url_for('static', filename='jk14.png') }}";
       const ICON_URL_KEIKYU = "{{ url_for('static', filename='kk32.avif') }}";
@@ -223,14 +214,10 @@
         if (currentLine === line) return;
         currentLine = line;
 
-        // ボタンの表示状態切り替え
         document.getElementById('btn-jr').classList.toggle('active', line === 'jr');
         document.getElementById('btn-keikyu').classList.toggle('active', line === 'keikyu');
-
-        // ファビコン（タブ画像）の変更
         document.getElementById('favicon').href = (line === 'keikyu') ? ICON_URL_KEIKYU : ICON_URL_JR;
 
-        // 見出しタイトル（行先案内）の変更
         if (line === 'keikyu') {
           document.getElementById('up-title').innerText = "上り（川崎・蒲田・泉岳寺方面）";
           document.getElementById('down-title').innerText = "下り（横浜・上大岡・浦賀方面）";
@@ -247,6 +234,7 @@
       function fetchTrainData() {
         const walkMin = parseInt(document.getElementById('walk-time-select').value, 10);
         
+        // 日付をまたぐ深夜帯（0時〜3時未満）の場合、API側へ「前日のデータ」を要求するためのパラメータや日付を付与するなどの拡張ができるよう、現在時刻を元に取得
         fetch(`/api/trains?walk=${walkMin}&line=${currentLine}`)
           .then(response => response.json())
           .then(data => {
@@ -320,30 +308,45 @@
         let html = "";
         const labels = ["先発", "次発"];
         
-        let currentPreciseSec = realNow.getHours() * 3600 + realNow.getMinutes() * 60 + realNow.getSeconds() + realNow.getMilliseconds() / 1000;
+        let currentHour = realNow.getHours();
+        let currentMin = realNow.getMinutes();
+        let currentSec = realNow.getSeconds();
+        let currentMs = realNow.getMilliseconds();
+
+        let currentPreciseSec = currentHour * 3600 + currentMin * 60 + currentSec + currentMs / 1000;
+
+        // 【修正点】深夜0時〜3時未満の場合、現在時刻の秒数に24時間分（86400秒）を足して、
+        // バックエンドから送られてくる24時台以降の電車の時間と正しく大小比較できるようにする
+        let isLateNight = (currentHour >= 0 && currentHour < 3);
+        if (isLateNight) {
+          currentPreciseSec += 86400;
+        }
 
         let validCount = 0;
         for (let i = 0; i < trains.length; i++) {
           let t = trains[i];
           
           let timeParts = t.time.split(':');
-          let trainSec = parseInt(timeParts[0], 10) * 3600 + parseInt(timeParts[1], 10) * 60;
+          let trainHour = parseInt(timeParts[0], 10);
+          let trainMin = parseInt(timeParts[1], 10);
+          let trainSec = trainHour * 3600 + trainMin * 60;
+          
           let leavePreciseSec = trainSec - walkSec;
           
-          let adjustedCurrentSec = currentPreciseSec;
-          if (realNow.getHours() >= 0 && realNow.getHours() < 3 && trainSec < 3 * 3600) {
-            adjustedCurrentSec += 86400;
+          // バックエンドの電車の時間が深夜帯（0時〜3時未満に発車する、または24時以降の表記）の場合
+          // ※もしバックエンドが24時以降を「24:xx」などで返している場合はそのままでOKですが、
+          // 念のため、現在時刻が深夜帯で、電車の時間が朝3時未満の場合は日付またぎとして +86400秒 を加算します
+          if (isLateNight && trainHour < 3) {
             leavePreciseSec += 86400;
           }
 
-          let remainingPrecise = leavePreciseSec - adjustedCurrentSec;
+          let remainingPrecise = leavePreciseSec - currentPreciseSec;
           
           if (remainingPrecise <= 0) continue;
 
           let totalRemainingSecInt = Math.ceil(remainingPrecise) - 1;
           if (totalRemainingSecInt < 0) continue;
 
-          // 種別に応じたバッジスタイルの判定
           let badgeClass = "type-local";
           if (t.type === "快速") {
             badgeClass = "type-rapid";
@@ -351,7 +354,6 @@
             badgeClass = "type-ltdexp";
           }
 
-          // 「羽田空港第１・第２ターミナル」の表記省略化
           let destName = t.destination;
           if (destName === "羽田空港第１・第２ターミナル") {
             destName = "羽田空港";
@@ -364,7 +366,7 @@
           let s = totalRemainingSecInt % 60;
           let countStr = m + "分" + String(s).padStart(2, '0') + "秒";
 
-          let leaveTimeShort = t.leaveTime.substring(0, 5);
+          let leaveTimeShort = t.leaveTime ? t.leaveTime.substring(0, 5) : "";
 
           html += `
             <div class="train-item">
@@ -382,7 +384,6 @@
         return html === "" ? "<p style='text-align:center; color:#777; font-size:1.1em;'>本日の残りの電車はありません</p>" : html;
       }
 
-      // ── 超高精度リアルタイム・ループ制御 ──
       let lastRenderedSecond = -1;
 
       function highPrecisionLoop() {
@@ -407,7 +408,6 @@
     <div class="header-area">
       <h1>次発電車リアルタイム案内</h1>
       <div class="sub-header-row">
-        <!-- 駅名・路線選択ボタンエリア -->
         <div class="station-selector">
           <button id="btn-jr" class="line-btn jr active" onclick="switchLine('jr')">
             <img src="{{ url_for('static', filename='jk14.png') }}" alt="JR icon" class="station-inline-icon">ＪＲ新子安駅
@@ -473,7 +473,6 @@
       </div>
     </div>
 
-    <!-- 京急選択時のみ表示される注記テキスト -->
     <div id="keikyu-note" class="note-text" style="display: none;">
       ※羽田空港＝羽田空港第１・第２ターミナル
     </div>
