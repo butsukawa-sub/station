@@ -17,13 +17,16 @@
     <meta property="og:type" content="website">
 
     <!-- Twitter Card (X等) -->
+    {% if og_images %}
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="新子安駅の時刻表">
     <meta name="twitter:description" content="浅野学園から新子安駅までの徒歩時間を設定して、&#10;自分がどの電車に乗れるか確かめよう！&#10;&#10;※画像はイメージです。">
     <meta name="twitter:image" content="{{ url_for('static', filename=og_images[0], _external=True) }}">
-
-    <!-- Discord等のフッター表示用 -->
-    <meta name="author" content="※画像はイメージです。">
+    {% else %}
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="新子安駅の時刻表">
+    <meta name="twitter:description" content="浅野学園から新子安駅までの徒歩時間を設定して、&#10;自分がどの電車に乗れるか確かめよう！&#10;&#10;※画像はイメージです。">
+    {% endif %}
 
     <link id="favicon" rel="icon" href="{{ url_for('static', filename='jk14.png') }}" type="image/png">
 
