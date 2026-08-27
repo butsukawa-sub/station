@@ -402,13 +402,16 @@
 
           let leaveTimeShort = t.leaveTime ? t.leaveTime.substring(0, 5) : "";
 
+          // 京急の場合はすべて6両表示にし、JRの場合は元のデータ(t.cars)を使用
+          let carCount = (currentLine === 'keikyu') ? 6 : t.cars;
+
           html += `
             <div class="train-item">
               <div class="train-label">${labelText}</div>
               <div class="train-details">
                 <div class="train-row">
                   <span class="train-badge ${badgeClass}">${t.type}</span>
-                  <span class="train-text-main">${destName}行｜${t.time}発｜${t.cars}両</span>
+                  <span class="train-text-main">${destName}行｜${t.time}発｜${carCount}両</span>
                 </div>
                 <div class="countdown">残り時間: ${countStr}（リミット: ${leaveTimeShort}）</div>
               </div>
