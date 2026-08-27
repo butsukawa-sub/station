@@ -227,7 +227,21 @@ def find_next_trains(timetable, current_total_sec, current_hour, walk_time_sec):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    # URLパラメータ 'v' を取得
+    v_param = request.args.get('v', '').lower()
+    
+    # 初期路線の決定 (デフォルトは 'jr')
+    initial_line = 'keikyu' if v_param == 'kk' else 'jr'
+    
+    # OGP画像の決定
+    if v_param == 'jr':
+        og_images = ['embed.png']
+    elif v_param == 'kk':
+        og_images = ['embed2.png']
+    else:
+        og_images = ['embed.png', 'embed2.png']
+        
+    return render_template('index.html', initial_line=initial_line, og_images=og_images)
 
 @app.route('/api/trains')
 def api_trains():
