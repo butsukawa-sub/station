@@ -233,13 +233,13 @@ def index():
     # 初期路線の決定 (デフォルトは 'jr')
     initial_line = 'keikyu' if v_param == 'kk' else 'jr'
     
-    # OGP画像の決定
+    # OGP画像の決定（指定なし・その他の場合は空配列にする）
     if v_param == 'jr':
         og_images = ['embed.png']
     elif v_param == 'kk':
         og_images = ['embed2.png']
     else:
-        og_images = ['embed.png', 'embed2.png']
+        og_images = []  # その他の場合は画像を表示しない
         
     return render_template('index.html', initial_line=initial_line, og_images=og_images)
 
