@@ -73,9 +73,29 @@
         color: #c62828;
       }
 
-      .day-type-badge { background: #ffc107; color: #333; padding: 3px 12px; border-radius: 12px; font-weight: bold; font-size: 1.1em; }
+      /* 日付・ダイヤ統合エリア */
+      .date-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        font-size: 1.15em;
+        color: #444;
+        margin-bottom: 6px;
+        font-weight: bold;
+        flex-wrap: wrap;
+      }
+
+      .day-type-badge { 
+        background: #ffc107; 
+        color: #333; 
+        padding: 3px 12px; 
+        border-radius: 12px; 
+        font-weight: bold; 
+        font-size: 1.0em; /* 日付と同じ視覚的大きさになるよう調整 */
+        display: inline-block;
+      }
       
-      .date-display { font-size: 1.15em; color: #444; margin-bottom: 6px; font-weight: bold; }
       .time-display { font-size: 2.8em; font-weight: bold; color: #007bff; letter-spacing: 2px; margin-bottom: 10px; }
       
       /* 徒歩時間変更エリア */
@@ -158,8 +178,8 @@
         h1 { font-size: 1.2em; }
         .line-btn { font-size: 0.85em; padding: 4px 8px; }
         .station-inline-icon { height: 1.5em; }
-        .day-type-badge { font-size: 0.85em; padding: 2px 8px; }
-        .date-display { font-size: 0.9em; }
+        .date-container { font-size: 0.9em; }
+        .day-type-badge { font-size: 0.9em; padding: 2px 8px; }
         .time-display { font-size: 1.8em; margin: 4px 0; }
         .walk-time-selector { font-size: 0.85em; }
         .walk-time-selector select { font-size: 0.85em; padding: 2px 4px; }
@@ -191,7 +211,8 @@
         }
         h1 { font-size: 2.1em; }
         .line-btn { font-size: 1.1em; padding: 6px 14px; }
-        .day-type-badge { font-size: 1.15em; padding: 3px 12px; }
+        .date-container { font-size: 1.15em; }
+        .day-type-badge { font-size: 1.0em; padding: 3px 12px; }
         .time-display { font-size: 3.0em; }
         .walk-time-selector { font-size: 1.1em; }
         h2 { font-size: 1.5em; }
@@ -234,7 +255,6 @@
       function fetchTrainData() {
         const walkMin = parseInt(document.getElementById('walk-time-select').value, 10);
         
-        // 日付をまたぐ深夜帯（0時〜3時未満）の場合、API側へ「前日のデータ」を要求するためのパラメータや日付を付与するなどの拡張ができるよう、現在時刻を元に取得
         fetch(`/api/trains?walk=${walkMin}&line=${currentLine}`)
           .then(response => response.json())
           .then(data => {
@@ -330,11 +350,9 @@
           let trainMin = parseInt(timeParts[1], 10);
           let trainSec = trainHour * 3600 + trainMin * 60;
           
-          // ★重要：現在が23時台で、電車の時間が0時〜3時台なら、翌日の時間（+86400秒）として扱う
           if (currentHour === 23 && trainHour >= 0 && trainHour < 3) {
             trainSec += 86400;
           }
-          // もし現在がすでに深夜帯（0時〜3時未満）で、電車の時間も深夜帯の場合も同様に補正
           else if (isLateNight && trainHour < 3) {
             trainSec += 86400;
           }
@@ -416,9 +434,14 @@
             <img src="{{ url_for('static', filename='kk32.avif') }}" alt="Keikyu icon" class="station-inline-icon">京急新子安駅
           </button>
         </div>
+      </div>
+
+      <!-- 日付とダイヤ表示を同じ行に配置 -->
+      <div class="date-container">
+        <span id="date-box">読み込み中...</span>
         <span id="day-type-box" class="day-type-badge">--ダイヤ</span>
       </div>
-      <div id="date-box" class="date-display">読み込み中...</div>
+
       <div id="time-box" class="time-display">--:--:--</div>
       
       <div class="walk-time-selector">
