@@ -233,15 +233,25 @@ def index():
     # 初期路線の決定 (デフォルトは 'jr')
     initial_line = 'keikyu' if v_param == 'kk' else 'jr'
     
-    # OGP画像の決定（指定なし・その他の場合は空配列にする）
+    # OGP画像と説明文の決定
+    base_desc = "浅野学園から新子安駅までの徒歩時間を設定して、&#10;自分がどの電車に乗れるか確かめよう！"
+
     if v_param == 'jr':
         og_images = ['embed.png']
+        og_desc = f"{base_desc}&#10;&#10;※画像はイメージです。"
     elif v_param == 'kk':
         og_images = ['embed2.png']
+        og_desc = f"{base_desc}&#10;&#10;※画像はイメージです。"
     else:
-        og_images = []  # その他の場合は画像を表示しない
+        og_images = []
+        og_desc = base_desc  # 画像なし（その他）の場合は注記を含めない
         
-    return render_template('index.html', initial_line=initial_line, og_images=og_images)
+    return render_template(
+        'index.html', 
+        initial_line=initial_line, 
+        og_images=og_images,
+        og_desc=og_desc
+    )
 
 @app.route('/api/trains')
 def api_trains():
