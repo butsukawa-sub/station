@@ -28,6 +28,9 @@
     <meta name="twitter:description" content="浅野学園から新子安駅までの徒歩時間を設定して、&#10;自分がどの電車に乗れるか確かめよう！&#10;&#10;※画像はイメージです。">
     {% endif %}
 
+    <!-- Discord等のフッター表示用 -->
+    <meta name="author" content="※画像はイメージです。">
+
     <link id="favicon" rel="icon" href="{{ url_for('static', filename='jk14.png') }}" type="image/png">
 
     <style>
@@ -191,6 +194,7 @@
         color: #666;
         margin-top: 10px;
         font-weight: bold;
+        line-height: 1.5;
       }
 
       /* ==========================================
@@ -249,7 +253,6 @@
     <script>
       let currentData = { up: [], down: [], dayType: "" };
       let lastFetchedTime = 0;
-      // Jinja2から渡された初期路線を設定
       let currentLine = "{{ initial_line }}";
 
       const ICON_URL_JR = "{{ url_for('static', filename='jk14.png') }}";
@@ -266,11 +269,9 @@
         if (line === 'keikyu') {
           document.getElementById('up-title').innerText = "上り（川崎・蒲田・泉岳寺方面）";
           document.getElementById('down-title').innerText = "下り（横浜・上大岡・浦賀方面）";
-          document.getElementById('keikyu-note').style.display = "block";
         } else {
           document.getElementById('up-title').innerText = "上り（川崎・東京・大宮方面）";
           document.getElementById('down-title').innerText = "下り（横浜・桜木町・大船方面）";
-          document.getElementById('keikyu-note').style.display = "none";
         }
 
         fetchTrainData();
@@ -336,6 +337,20 @@
 
         document.getElementById('up-content').innerHTML = formatTrains(currentData.up, realNow);
         document.getElementById('down-content').innerHTML = formatTrains(currentData.down, realNow);
+
+        // --- ダイヤ改正日メッセージの制御 ---
+        let noteHtml = "";
+        let isWeekday = (currentData.dayType === "平日ダイヤ");
+
+        if (currentLine === 'jr') {
+          let jrDate = isWeekday ? "2026年3月16日" : "2026年3月14日";
+          noteHtml = `${jrDate}改正のダイヤを表示しています。`;
+        } else {
+          let keikyuDate = isWeekday ? "2025年12月15日" : "2025年12月13日";
+          noteHtml = `※羽田空港＝羽田空港第１・第２ターミナル<br>${keikyuDate}改正のダイヤを表示しています。`;
+        }
+        
+        document.getElementById('notice-note').innerHTML = noteHtml;
 
         if (Date.now() - lastFetchedTime > 5000) {
           fetchTrainData();
@@ -408,10 +423,6 @@
 
           let leaveTimeShort = t.leaveTime ? t.leaveTime.substring(0, 5) : "";
 
-          // 京急の場合はすべて6両表示にし、JRの場合は元のデータ(t.cars)を使用
-          let carCount = (currentLine === 'keikyu') ? 6 : t.cars;
-
-          // 両数表示（${carCount}両）を削除
           html += `
             <div class="train-item">
               <div class="train-label">${labelText}</div>
@@ -443,14 +454,12 @@
       }
 
       window.onload = function() {
-        // パラメータが kk の場合、UI表示を京急モードへ切り替え
         if (currentLine === 'keikyu') {
           document.getElementById('btn-jr').classList.remove('active');
           document.getElementById('btn-keikyu').classList.add('active');
           document.getElementById('favicon').href = ICON_URL_KEIKYU;
           document.getElementById('up-title').innerText = "上り（川崎・蒲田・泉岳寺方面）";
           document.getElementById('down-title').innerText = "下り（横浜・上大岡・浦賀方面）";
-          document.getElementById('keikyu-note').style.display = "block";
         }
 
         fetchTrainData();
@@ -531,8 +540,6 @@
       </div>
     </div>
 
-    <div id="keikyu-note" class="note-text" style="display: none;">
-      ※羽田空港＝羽田空港第１・第２ターミナル
-    </div>
+    <div id="notice-note" class="note-text"></div>
   </body>
 </html>
