@@ -7,10 +7,10 @@
 
     <!-- 埋め込みカードの左端の線の色（緑色） -->
     <meta name="theme-color" content="#28a745">
-
+    
     <!-- OGタグ (Discord, LINE等) -->
     <meta property="og:title" content="新子安駅の時刻表">
-    <meta property="og:description" content="浅野学園から新子安駅までの徒歩時間を設定して、&#10;自分がどの電車に乗れるか確かめよう！&#10;&#10;※画像はイメージです。">
+    <meta property="og:description" content="{{ og_desc|safe }}">
     {% for img in og_images %}
     <meta property="og:image" content="{{ url_for('static', filename=img, _external=True) }}">
     {% endfor %}
@@ -20,16 +20,18 @@
     {% if og_images %}
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="新子安駅の時刻表">
-    <meta name="twitter:description" content="浅野学園から新子安駅までの徒歩時間を設定して、&#10;自分がどの電車に乗れるか確かめよう！&#10;&#10;※画像はイメージです。">
+    <meta name="twitter:description" content="{{ og_desc|safe }}">
     <meta name="twitter:image" content="{{ url_for('static', filename=og_images[0], _external=True) }}">
     {% else %}
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="新子安駅の時刻表">
-    <meta name="twitter:description" content="浅野学園から新子安駅までの徒歩時間を設定して、&#10;自分がどの電車に乗れるか確かめよう！&#10;&#10;※画像はイメージです。">
+    <meta name="twitter:description" content="{{ og_desc|safe }}">
     {% endif %}
 
-    <!-- Discord等のフッター表示用 -->
+    <!-- author タグも画像がある時のみ注記を入れる場合 -->
+    {% if og_images %}
     <meta name="author" content="※画像はイメージです。">
+    {% endif %}
 
     <link id="favicon" rel="icon" href="{{ url_for('static', filename='jk14.png') }}" type="image/png">
 
