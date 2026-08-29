@@ -260,14 +260,24 @@
       const ICON_URL_JR = "{{ url_for('static', filename='jk14.png') }}";
       const ICON_URL_KEIKYU = "{{ url_for('static', filename='kk32.avif') }}";
 
-      function switchLine(line) {
-        if (currentLine === line) return;
+      function switchLine(line, updateUrl = true) {
+        if (currentLine === line && updateUrl) return;
         currentLine = line;
 
+        // --- URL表記をページリロードなしで変更 ---
+        if (updateUrl) {
+          const newParam = (line === 'keikyu') ? 'kk' : 'jr';
+          const newUrl = `${window.location.pathname}?v=${newParam}`;
+          // 履歴に残す場合は pushState、残さず上書きする場合は replaceState を使用
+          history.pushState({ line: line }, '', newUrl);
+        }
+
+        // ボタンとアイコンの見た目変更
         document.getElementById('btn-jr').classList.toggle('active', line === 'jr');
         document.getElementById('btn-keikyu').classList.toggle('active', line === 'keikyu');
         document.getElementById('favicon').href = (line === 'keikyu') ? ICON_URL_KEIKYU : ICON_URL_JR;
 
+        // 見出しテキスト変更
         if (line === 'keikyu') {
           document.getElementById('up-title').innerText = "上り（川崎・蒲田・泉岳寺方面）";
           document.getElementById('down-title').innerText = "下り（横浜・上大岡・浦賀方面）";
@@ -276,8 +286,19 @@
           document.getElementById('down-title').innerText = "下り（横浜・桜木町・大船方面）";
         }
 
+        // 非同期で時刻表データを取得・描画
         fetchTrainData();
       }
+
+      // ブラウザの「戻る」「進む」ボタンを押した際にも非同期で切り替える
+      window.addEventListener('popstate', function(event) {
+        const params = new URLSearchParams(window.location.search);
+        const v = params.get('v');
+        const targetLine = (v === 'kk') ? 'keikyu' : 'jr';
+        
+        // 第2引数を false にして、popstate 内で再度 pushState が走らないようにする
+        switchLine(targetLine, false);
+      });
 
       function fetchTrainData() {
         const walkMin = parseInt(document.getElementById('walk-time-select').value, 10);
