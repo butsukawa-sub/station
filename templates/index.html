@@ -313,20 +313,21 @@
         // 年末年始判定 (12/30〜1/3)
         let isNewYear = (month === 12 && (day === 30 || day === 31)) || (month === 1 && (day >= 1 && day <= 3));
         
-        // 日付文字列の構築
+        // 日付文字列の接尾辞（カッコ部分）の構築
         let dateSuffix = "";
         if (isNewYear) {
           // 年末年始の場合
           dateSuffix = "（特例: 年末年始）";
         } else if (currentData.isHoliday) {
-          // 祝日の場合（祝日名があれば表示）
+          // 祝日の場合（API等から渡される祝日名を表示。なければ "祝日"）
           let holidayName = currentData.holidayName || "祝日";
           dateSuffix = `（祝日: ${holidayName}）`;
         } else {
-          // 通常の平日・土日（かっこ・注記なし）
+          // 通常の平日・土日（注記なし）
           dateSuffix = "";
         }
 
+        // フォーマット結果の組み立て
         let fullDateString = `${yearWestern}年${month}月${day}日 ${weekdayStr}曜日` + dateSuffix;
 
         let timeStr = String(realNow.getHours()).padStart(2, '0') + ":" + 
@@ -336,8 +337,6 @@
         document.getElementById('day-type-box').innerText = currentData.dayType || "--ダイヤ";
         document.getElementById('date-box').innerText = fullDateString;
         document.getElementById('time-box').innerText = timeStr;
-
-        // ... (以降の処理は変更なし)
         
         const selectedWalkVal = document.getElementById('walk-time-select').value;
         const departureInfoHtml = `出発地: 浅野学園｜徒歩: ${selectedWalkVal}分`;
