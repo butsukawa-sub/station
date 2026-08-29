@@ -17,12 +17,11 @@ def check_is_holiday(date):
     day = date.day
     day_of_week = date.weekday()
 
+    # 1. 年末年始判定 (12/30〜1/3)
     if (month == 12 and (day == 30 or day == 31)) or (month == 1 and (1 <= day <= 3)):
         return True, "年末年始"
 
-    if day_of_week == 5 or day_of_week == 6:
-        return True, "土曜日" if day_of_week == 5 else "日曜日"
-
+    # 2. 祝日API判定（土日より先に判定して、土曜日・日曜日と被る祝日名を取得する）
     try:
         url = "https://holidays-jp.github.io/api/v1/date.json"
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
@@ -31,13 +30,18 @@ def check_is_holiday(date):
             holidays = json.loads(response.read().decode('utf-8'))
             target_str = date.strftime('%Y-%m-%d')
             
+            # 祝日に該当する場合は、祝日名を返す
             if target_str in holidays:
                 return True, holidays[target_str] # 例: "山の日"
     except Exception as e:
         print(f"Holidays API Error: {e}")
 
-    return False, ""
+    # 3. 通常の土日判定（休日ダイヤ適用のため True にするが、祝日名は空にする）
+    if day_of_week == 5 or day_of_week == 6:
+        return True, ""
 
+    # 4. 通常の平日
+    return False, ""
 def parse_keikyu_timetable(content, direction):
     """京急形式（05:12\t普通\t浦賀行き 等）の時刻表テキストをパースする"""
     timetable = []
