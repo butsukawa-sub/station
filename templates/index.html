@@ -318,10 +318,9 @@
         if (isNewYear) {
           // 年末年始の場合
           dateSuffix = "（特例: 年末年始）";
-        } else if (currentData.isHoliday) {
-          // 祝日の場合（API等から渡される祝日名を表示。なければ "祝日"）
-          let holidayName = currentData.holidayName || "祝日";
-          dateSuffix = `（祝日: ${holidayName}）`;
+        } else if (currentData.holidayName && currentData.holidayName.trim() !== "") {
+          // 祝日名が存在する場合のみ「（祝日: ◯◯）」を表示
+          dateSuffix = `（祝日: ${currentData.holidayName}）`;
         } else {
           // 通常の平日・土日（注記なし）
           dateSuffix = "";
@@ -364,7 +363,7 @@
           fetchTrainData();
         }
       }
-
+      
       function formatTrains(trains, realNow) {
         if (!trains || trains.length === 0) {
           return "<p style='text-align:center; color:#777; font-size:1.1em;'>本日の残りの電車はありません</p>";
