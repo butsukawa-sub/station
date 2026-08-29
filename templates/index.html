@@ -312,16 +312,21 @@
 
         let isNewYear = (month === 12 && (day === 30 || day === 31)) || (month === 1 && (day >= 1 && day <= 3));
         
-        let dateSuffix = `（${weekdayStr}）`;
+        // --- 日付文字列の生成ロジック ---
+        let dateSuffix = "";
+
         if (isNewYear) {
-          dateSuffix = ` ${weekdayStr}曜日（年末年始期間）`;
+          // 年末年始の場合
+          dateSuffix = ` ${weekdayStr}曜日（特例: 年末年始）`;
         } else if (currentData.isHoliday) {
+          // 祝日の場合
           let holidayName = currentData.holidayName || "祝日";
-          dateSuffix = ` ${weekdayStr}曜日・祝日（${holidayName}）`;
+          dateSuffix = ` ${weekdayStr}曜日（祝日: ${holidayName}）`;
         } else {
+          // 通常の平日・土日の場合
           dateSuffix = ` ${weekdayStr}曜日`;
         }
-
+        
         let fullDateString = `${yearWestern}年${month}月${day}日` + dateSuffix;
 
         let timeStr = String(realNow.getHours()).padStart(2, '0') + ":" + 
